@@ -4,7 +4,7 @@
 
 Each preset is deterministic: the same preset always produces the same events. The numbers below come from the shipped presets with the default synthetic 8B GQA architecture (32 layers, 8 KV heads, head dimension 128, 128 KiB of FP16 KV per token, 16-token blocks of 2 MiB). They are outputs of the [model](model.md), not hardware measurements.
 
-Open a preset directly with `#scenario=<id>`, for example `#scenario=kv-pressure`.
+Open a preset directly with `#scenario=<id>`, for example `#scenario=kv-pressure`. A link from the earlier version of the site, `?scenario=<id>`, opens the same preset and the address bar switches to the fragment form.
 
 ## Long prefill interruption (`long-prefill`)
 
