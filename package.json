@@ -12,6 +12,8 @@
     "test": "node --test \"src/**/*.test.ts\"",
     "build": "tsc -b && vite build",
     "check": "npm test && npm run build",
+    "predeploy": "npm run check",
+    "deploy": "npx wrangler pages deploy dist --project-name=inference-lab",
     "preview": "vite preview --host 0.0.0.0",
     "test:e2e": "playwright test"
   },

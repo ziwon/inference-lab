@@ -12,13 +12,12 @@ export type Selection = { kind: 'request'; request: number } | { kind: 'iteratio
 
 interface DetailsProps {
   cmp: Comparison;
-  at: Playhead;
   states: Record<PanelId, Readonly<SimState>>;
   selection: Selection;
   onSelect: (s: Selection) => void;
 }
 
-export function DetailsPanel({ cmp, at, states, selection, onSelect }: DetailsProps) {
+export function DetailsPanel({ cmp, states, selection, onSelect }: DetailsProps) {
   return (
     <section className="card" aria-labelledby="details-heading" data-testid="details">
       <div className="card-head">
@@ -35,14 +34,14 @@ export function DetailsPanel({ cmp, at, states, selection, onSelect }: DetailsPr
       </div>
       <div className="card-body">
         {selection === null && <p className="muted">{S.details.hint}</p>}
-        {selection?.kind === 'request' && <RequestDetails cmp={cmp} at={at} states={states} request={selection.request} onSelect={onSelect} />}
+        {selection?.kind === 'request' && <RequestDetails cmp={cmp} states={states} request={selection.request} onSelect={onSelect} />}
         {selection?.kind === 'iteration' && <IterationDetails cmp={cmp} panel={selection.panel} iteration={selection.iteration} state={states[selection.panel]} onSelect={onSelect} />}
       </div>
     </section>
   );
 }
 
-function RequestDetails({ cmp, at, states, request, onSelect }: { cmp: Comparison; at: Playhead; states: DetailsProps['states']; request: number; onSelect: (s: Selection) => void }) {
+function RequestDetails({ cmp, states, request, onSelect }: { cmp: Comparison; states: DetailsProps['states']; request: number; onSelect: (s: Selection) => void }) {
   const item = cmp.trace[request]!;
   const rows = PANEL_IDS.map(panel => {
     const run = cmp.panels[panel];

@@ -428,7 +428,7 @@ export function App() {
           </div>
 
           <div className="bottom">
-            <DetailsPanel cmp={cmp} at={at} states={states} selection={selection} onSelect={setSelection} />
+            <DetailsPanel cmp={cmp} states={states} selection={selection} onSelect={setSelection} />
             <EventLog
               cmp={cmp}
               at={at}

@@ -61,12 +61,11 @@ The site is static, so any static host works. For Cloudflare Pages with Git inte
 | Output directory | `dist` |
 | Build environment | `NODE_VERSION=24` |
 
-For a manual upload, authenticate Wrangler and deploy the build output. `wrangler.jsonc` already names the project and output directory.
+For a manual upload, authenticate Wrangler and deploy the build output. `npm run deploy` runs `npm run check` first, then uploads `dist` to the `inference-lab` project.
 
 ```sh
-npm run check
 npx wrangler login
-npx wrangler pages deploy
+npm run deploy
 ```
 
 Nothing in this repository deploys automatically, and the app needs no environment variables, secrets, or backend.
