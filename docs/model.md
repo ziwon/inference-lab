@@ -6,7 +6,7 @@ Inference Lab is a deterministic simulation of one logical GPU serving a decoder
 
 ## Scope
 
-Supported: one logical GPU, a conventional decoder-only Transformer with full attention, and MHA or GQA through an explicit KV-head count.
+Supported: one logical GPU, a conventional decoder-only Transformer with full attention, and MHA or GQA through an explicit KV-head count. The query-head count must be a multiple of the KV-head count, so every KV head serves an equal group of query heads.
 
 Excluded from this release: MLA, sliding-window attention, recurrent or hybrid layers, tensor or pipeline parallelism, prefix caching and block sharing, disaggregated prefill and decode, speculative decoding, KV offloading, preemption and recomputation, autoscaling, stochastic end-of-sequence, and live benchmark import. The policy registry (`POLICIES` in `src/sim/scheduler.ts`), the event union (`SimEvent` in `src/sim/state.ts`), and the memory plan (`planMemory`) are the extension points.
 

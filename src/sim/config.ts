@@ -131,6 +131,7 @@ export type IssueCode =
   | 'zeroDurationWork'
   | 'promptExceedsWholePrefillBudget'
   | 'kvHeadsExceedQueryHeads'
+  | 'queryHeadsNotGrouped'
   | 'tooManyKvBlocks'
   | 'tooLarge';
 
@@ -204,7 +205,9 @@ export function parseConfig(input: unknown): Result<SimConfig, Issue[]> {
     headDim: r.int(a, 'headDim', 'architecture', 1, 1024),
     maxContextTokens: r.int(a, 'maxContextTokens', 'architecture', 2, LIMITS.contextTokens),
   };
-  if (architecture.numKvHeads > architecture.numQueryHeads) r.issues.push({ path: 'architecture.numKvHeads', code: 'kvHeadsExceedQueryHeads' });
+  const { numQueryHeads: query, numKvHeads: kv } = architecture;
+  if (kv > query) r.issues.push({ path: 'architecture.numKvHeads', code: 'kvHeadsExceedQueryHeads' });
+  else if (kv >= 1 && query % kv !== 0) r.issues.push({ path: 'architecture.numKvHeads', code: 'queryHeadsNotGrouped', params: { query, kv } });
 
   const m = r.obj(root.memory, 'memory');
   const memory: MemoryConfig = {

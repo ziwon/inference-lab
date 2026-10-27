@@ -369,6 +369,7 @@ const ISSUE_TEXT: Record<IssueCode, (p: Params) => string> = {
   promptExceedsWholePrefillBudget: p =>
     `Panel ${p?.panel}: request ${p?.id} has ${p?.promptTokens} prompt tokens, more than the ${p?.budget}-token budget. The whole-prefill policy cannot run it. Raise the budget or use chunked prefill.`,
   kvHeadsExceedQueryHeads: () => 'KV heads cannot exceed query heads.',
+  queryHeadsNotGrouped: p => `${p?.query} query heads do not split evenly into groups for ${p?.kv} KV heads. MHA and GQA need query heads to be a multiple of KV heads.`,
   tooManyKvBlocks: p =>
     `The trace allocates ${p?.total} KV blocks in total, more than the ${p?.max} this page tracks. Raise the block size or shorten the trace.`,
   tooLarge: p => `Too large (${p?.length ?? p?.total} > ${p?.max}). Export and import JSON for large traces.`,

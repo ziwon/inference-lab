@@ -91,3 +91,13 @@ test('validation rejects context overruns, zero-duration cost, and impossible he
   const dup = parseConfig({ ...config, trace: { kind: 'explicit', requests: [r('x', 0, 10, 2), r('x', 1, 10, 2)] } });
   assert.equal(!dup.ok && dup.error[0]!.code, 'duplicateId');
 });
+
+test('validation accepts MHA and GQA head counts and rejects query heads that do not group evenly over KV heads', () => {
+  const config = scenario('long-prefill').config;
+  const heads = (numQueryHeads: number, numKvHeads: number) => parseConfig({ ...config, architecture: { ...config.architecture, numQueryHeads, numKvHeads } });
+  for (const [q, kv] of [[32, 32], [32, 8], [32, 1], [24, 24]] as const) assert.ok(heads(q, kv).ok, `${q}/${kv}`);
+  const uneven = heads(32, 6);
+  assert.deepEqual(!uneven.ok && uneven.error, [{ path: 'architecture.numKvHeads', code: 'queryHeadsNotGrouped', params: { query: 32, kv: 6 } }]);
+  const exceeds = heads(8, 32);
+  assert.deepEqual(!exceeds.ok && exceeds.error.map(i => i.code), ['kvHeadsExceedQueryHeads']);
+});

@@ -63,6 +63,5 @@ The findings left open are listed below.
 - Policy B can hold a prompt back indefinitely if decodes keep filling the budget. The finite presets end, but no starvation freedom is claimed.
 - There is no React error boundary. An engine invariant failure, which would be a bug, blanks the page instead of showing a notice.
 - Scenario prose quotes engine outputs (the 166 ms iteration, 871 ms makespan). Only the block counts are checked by a test, so a cost-default change could leave the text stale.
-- Validation accepts a query-head count that is not a multiple of the KV-head count. KV bytes depend only on the KV-head count, so results are unaffected, but such a shape is not real GQA.
 - Iterations keep `prefillTokens` and `decodeTokens` beside the same counts in `cost`, and checkpoints replay the event log a second time after the run. Both are small duplications.
 - Skip records are stored per iteration. The record cap bounds them, but a recompute-on-demand design would remove them.
