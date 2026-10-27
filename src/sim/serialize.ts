@@ -59,6 +59,9 @@ export interface ExportDoc {
   panels: Record<PanelId, ReturnType<typeof exportPanel>>;
 }
 
+const exportEvents = (run: Comparison['panels'][PanelId]) =>
+  run.events.map(e => ('request' in e ? { ...e, request: run.trace[e.request]!.id } : e));
+
 function exportPanel(cmp: Comparison, panel: PanelId) {
   const run = cmp.panels[panel];
   return {
@@ -66,7 +69,7 @@ function exportPanel(cmp: Comparison, panel: PanelId) {
     limits: run.limits,
     outcome: run.outcome,
     summary: summarize(run, run.endUs, cmp.config.slo),
-    events: run.events,
+    events: exportEvents(run),
     iterations: run.iterations.map(it => ({
       index: it.index,
       startUs: it.startUs,
@@ -118,7 +121,7 @@ export function importText(text: string): Result<Imported, Issue[]> {
   let history: Imported['history'] = 'absent';
   const panels = doc.panels as Partial<Record<PanelId, { events?: unknown }>> | undefined;
   if (isExport && panels) {
-    const same = PANEL_IDS.every(p => JSON.stringify(panels[p]?.events) === JSON.stringify(built.value.panels[p].events));
+    const same = PANEL_IDS.every(p => JSON.stringify(panels[p]?.events) === JSON.stringify(exportEvents(built.value.panels[p])));
     history = same ? 'matches' : 'differs';
   }
   return ok({ comparison: built.value, history });

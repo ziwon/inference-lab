@@ -37,6 +37,14 @@ test('export then import rebuilds the same run and verifies the event history', 
   assert.deepEqual(JSON.parse(text).trace, cmp.requests);
 });
 
+test('exported events name the same request as the exported iterations when the trace is not in arrival order', () => {
+  const doc = exportRun(build(fixture({ trace: [r('late', 50, 8, 2), r('early', 0, 4, 3)] })));
+  const arrivals = doc.panels.A.events.flatMap(e => (e.kind === 'arrived' ? [[e.timeUs, e.request]] : []));
+  assert.deepEqual(arrivals, [[0, 'early'], [50_000, 'late']]);
+  const firstEntry = doc.panels.A.iterations[0]!.entries[0]!.request;
+  assert.equal(firstEntry, 'early');
+});
+
 test('an export records versions, assumptions, configuration, seed, trace, events, and summaries', () => {
   const doc = exportRun(build(scenario('edge-cases').config));
   assert.equal(doc.schema, 'inference-viz.run');
