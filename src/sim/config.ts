@@ -131,6 +131,7 @@ export type IssueCode =
   | 'zeroDurationWork'
   | 'promptExceedsWholePrefillBudget'
   | 'kvHeadsExceedQueryHeads'
+  | 'tooManyKvBlocks'
   | 'tooLarge';
 
 export interface Issue {

@@ -17,6 +17,7 @@ import type { TraceItem } from './trace.ts';
 import { durationUs } from './units.ts';
 
 export const MAX_ITERATIONS = 100_000;
+export const MAX_RECORDS = 400_000;
 
 export interface IterationEntry extends PlannedEntry {
   newBlocks: number;
@@ -95,6 +96,7 @@ export function simulatePanel(input: PanelInput): PanelRun {
   let nextArrival = 0;
   let nextAdmit = 0;
   let outcome: RunOutcome | null = null;
+  let records = 0;
 
   const arrive = () => {
     const request = nextArrival++;
@@ -134,12 +136,17 @@ export function simulatePanel(input: PanelInput): PanelRun {
       break;
     }
     if (iterations.length >= MAX_ITERATIONS) {
-      outcome = { code: 'truncated', maxIterations: MAX_ITERATIONS };
+      outcome = { code: 'truncated', limit: 'iterations', max: MAX_ITERATIONS };
       break;
     }
 
     const plan = POLICIES[input.policy]({ requests: state.requests, trace, activeInAdmissionOrder: active, limits });
     if (plan.entries.length === 0) throw new Error(`iteration ${iterations.length} scheduled no work`);
+    records += plan.entries.length + plan.skipped.length;
+    if (records > MAX_RECORDS) {
+      outcome = { code: 'truncated', limit: 'records', max: MAX_RECORDS };
+      break;
+    }
     const entries = plan.entries.map((entry): IterationEntry => {
       const r = state.requests[entry.request]!;
       const newBlocks = blocksFor(entry.cachedBefore + entry.tokens, memory.blockSizeTokens) - r.allocatedBlocks;

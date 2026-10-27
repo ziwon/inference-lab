@@ -14,7 +14,7 @@ export interface RequestState {
   lastServedIteration: number;
 }
 
-export type RunOutcome = { code: 'drained' } | { code: 'truncated'; maxIterations: number };
+export type RunOutcome = { code: 'drained' } | { code: 'truncated'; limit: 'iterations' | 'records'; max: number };
 
 export interface SimState {
   timeUs: number;

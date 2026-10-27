@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildComparison, seekStep, seekTime, panelApplied } from './compare.ts';
+import { MAX_TOTAL_KV_BLOCKS, buildComparison, seekStep, seekTime, panelApplied } from './compare.ts';
 import type { PolicyId } from './config.ts';
-import { stateAt } from './engine.ts';
+import { MAX_RECORDS, stateAt } from './engine.ts';
 import { auditRun } from './invariants.ts';
 import { SCENARIO_IDS, scenario } from './scenarios.ts';
 import { exportRun } from './serialize.ts';
@@ -152,4 +152,22 @@ test('every preset drains under both panels with clean audits', () => {
       assert.deepEqual(auditRun(cmp.panels[panel]), [], `${id} ${panel}`);
     }
   }
+});
+
+test('a run that would record more than MAX_RECORDS batch entries stops early as truncated and stays consistent', () => {
+  const trace = Array.from({ length: 128 }, (_, i) => r(`r${i}`, 0, 4000, 1));
+  const p = run({ trace, blocks: 200_000, scheduler: { maxPrefillChunkTokens: 1 } });
+  assert.deepEqual(p.outcome, { code: 'truncated', limit: 'records', max: MAX_RECORDS });
+  const recorded = p.iterations.reduce((s, it) => s + it.entries.length + it.skipped.length, 0);
+  assert.ok(recorded <= MAX_RECORDS, `recorded ${recorded}`);
+  assert.deepEqual(p.events.at(-1), { kind: 'runEnded', timeUs: p.endUs, outcome: p.outcome });
+  assert.equal(p.final.executing, null, 'no iteration is left half-applied');
+});
+
+test('a trace whose KV blocks exceed MAX_TOTAL_KV_BLOCKS fails validation instead of building', () => {
+  const config = fixture({ trace: Array.from({ length: 9 }, (_, i) => r(`r${i}`, i, 262_143, 1)), blockSize: 1, blocks: 300_000, scheduler: { maxBatchTokens: 262_144 } });
+  config.architecture.maxContextTokens = 262_144;
+  const built = buildComparison(config);
+  assert.ok(!built.ok);
+  assert.deepEqual(built.error.map(i => [i.code, i.params?.max]), [['tooManyKvBlocks', MAX_TOTAL_KV_BLOCKS]]);
 });

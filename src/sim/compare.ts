@@ -6,6 +6,7 @@ import { type TraceItem, materializeTrace, normalizeTrace } from './trace.ts';
 import { type Result, err, ok } from './units.ts';
 
 export const MAX_TOTAL_OUTPUT_TOKENS = 250_000;
+export const MAX_TOTAL_KV_BLOCKS = 2 ** 21;
 
 export interface Comparison {
   config: SimConfig;
@@ -36,6 +37,9 @@ export function semanticIssues(config: SimConfig, trace: readonly TraceItem[], m
   for (const kind of zeroDurationWork(config.cost)) issues.push({ path: 'cost', code: 'zeroDurationWork', params: { kind } });
   const totalOutput = trace.reduce((sum, r) => sum + r.outputTokens, 0);
   if (totalOutput > MAX_TOTAL_OUTPUT_TOKENS) issues.push({ path: 'trace', code: 'tooLarge', params: { total: totalOutput, max: MAX_TOTAL_OUTPUT_TOKENS } });
+  const reservations = trace.map(r => completionReservation(r.promptTokens, r.outputTokens, memory.blockSizeTokens));
+  const totalBlocks = reservations.reduce((sum, need) => (need <= memory.totalBlocks ? sum + need : sum), 0);
+  if (totalBlocks > MAX_TOTAL_KV_BLOCKS) issues.push({ path: 'trace', code: 'tooManyKvBlocks', params: { total: totalBlocks, max: MAX_TOTAL_KV_BLOCKS } });
   for (const panel of PANEL_IDS) {
     if (config.panels[panel].policy !== 'whole-prefill') continue;
     const budget = resolveLimits(config, panel).maxBatchTokens;

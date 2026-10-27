@@ -114,7 +114,7 @@ At each decision instant t, the engine does this in order:
 4. Admit from the FIFO queue.
 5. Plan and start the next iteration.
 
-A request that arrives strictly inside a running iteration is recorded at its own timestamp and becomes eligible at the next instant. New work never interrupts a running iteration. When nothing is active, the engine jumps to the next arrival. The run ends when every request has completed or been rejected. Every iteration schedules at least one token, so a valid configuration always makes progress. A safety limit of 100,000 iterations ends a run with an explicit "truncated" outcome instead of hanging the tab.
+A request that arrives strictly inside a running iteration is recorded at its own timestamp and becomes eligible at the next instant. New work never interrupts a running iteration. When nothing is active, the engine jumps to the next arrival. The run ends when every request has completed or been rejected. Every iteration schedules at least one token, so a valid configuration always makes progress. Two safety limits end a run early with an explicit "truncated" outcome instead of hanging or exhausting the tab: 100,000 iterations, and 400,000 recorded batch entries and skip records per panel. Validation also rejects a trace whose completion reservations total more than 2,097,152 KV blocks, and one with more than 250,000 output tokens. Together these bound the memory a share link or import can make the page use.
 
 ### Policy A: whole-prefill baseline
 
