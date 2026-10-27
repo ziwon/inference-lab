@@ -78,7 +78,7 @@ function fromSource(source: LinkSource): { loaded: Loaded; hash: string | null }
       const decoded = decodeShare(source.encoded);
       const built = decoded.ok ? buildComparison(decoded.value) : decoded;
       if (!built.ok) {
-        return { loaded: fromScenario(DEFAULT_SCENARIO, { tone: 'error', text: S.app.shareInvalid, details: built.error.slice(0, 6).map(issueText) }), hash: null };
+        return { loaded: fromScenario(DEFAULT_SCENARIO, { tone: 'error', text: S.app.shareInvalid, details: built.error.slice(0, 6).map(issueText) }), hash: `#scenario=${DEFAULT_SCENARIO}` };
       }
       return { loaded: { config: built.value.config, cmp: built.value, scenarioId: null, speed: 100, notice: null }, hash: `#c=${source.encoded}` };
     }

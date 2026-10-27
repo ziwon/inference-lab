@@ -127,6 +127,9 @@ test('a broken share link falls back to the default scenario with a notice', asy
   await page.goto('/#c=not-a-config');
   await expect(page.getByTestId('notice')).toContainText('could not be used');
   await expect(page.getByTestId('scenario-long-prefill')).toHaveAttribute('aria-pressed', 'true');
+  expect(new URL(page.url()).hash).toBe('#scenario=long-prefill');
+  await page.reload();
+  await expect(page.getByTestId('notice')).toHaveCount(0);
 });
 
 test('a scenario link from the earlier app opens that preset and moves to the fragment form', async ({ page }) => {
