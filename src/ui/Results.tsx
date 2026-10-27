@@ -20,7 +20,8 @@ const R = S.results.rows;
 const ROWS: Row[] = [
   { label: R.completed, value: s => s.counts.completed, show: v => String(v), better: 'higher', unit: 'count' },
   { label: R.infeasible, value: s => s.counts.infeasible, show: v => String(v), unit: 'count' },
-  { label: R.unfinished, value: s => s.counts.active + s.counts.waiting, show: v => String(v), better: 'lower', unit: 'count' },
+  { label: R.unfinished, value: s => s.counts.active + s.counts.pending, show: v => String(v), better: 'lower', unit: 'count' },
+  { label: R.waiting, value: s => s.counts.waiting, show: v => String(v), better: 'lower', unit: 'count' },
   ms(s => s.queueDelay, 'p50', R.queueDelay),
   ms(s => s.ttft, 'p50', R.ttftP50),
   ms(s => s.ttft, 'p90', R.ttftP90),
@@ -31,7 +32,7 @@ const ROWS: Row[] = [
   ms(s => s.e2e, 'p90', R.e2eP90),
   { label: R.throughput, better: 'higher', value: s => s.completedPerSec, show: formatRate, unit: 'rate' },
   { label: R.tokens, better: 'higher', value: s => s.outputTokensPerSec, show: formatRate, unit: 'rate' },
-  { label: R.slo, value: s => s.slo.attainment, show: (v, s) => `${formatPercent(v)} (${s.slo.met}/${s.slo.arrived})`, better: 'higher', unit: 'pct' },
+  { label: R.slo, value: s => s.slo.attainment, show: (v, s) => `${formatPercent(v)} (${s.slo.met}/${s.slo.counted})`, better: 'higher', unit: 'pct' },
   { label: R.goodput, better: 'higher', value: s => s.sloMetPerSec, show: formatRate, unit: 'rate' },
   { label: R.makespan, value: s => s.horizonUs, show: v => formatMs(v), better: 'lower', unit: 'ms' },
 ];
@@ -51,13 +52,13 @@ function delta(row: Row, a: Summary, b: Summary) {
 
 export function Results({ cmp, selected, onSelectRequest }: { cmp: Comparison; selected: number | null; onSelectRequest: (i: number) => void }) {
   const slo = cmp.config.slo;
-  const summaries = useMemo(() => ({ A: summarize(cmp.panels.A, cmp.panels.A.endUs, slo), B: summarize(cmp.panels.B, cmp.panels.B.endUs, slo) }), [cmp, slo]);
+  const summaries = useMemo(() => ({ A: summarize(cmp.panels.A, cmp.panels.A.final, slo), B: summarize(cmp.panels.B, cmp.panels.B.final, slo) }), [cmp, slo]);
   const perRequest = useMemo(
     () =>
       cmp.trace.map((item, i) => ({
         item,
-        A: requestMetrics(cmp.panels.A.histories[i]!, item.outputTokens, cmp.panels.A.endUs, slo),
-        B: requestMetrics(cmp.panels.B.histories[i]!, item.outputTokens, cmp.panels.B.endUs, slo),
+        A: requestMetrics(cmp.panels.A.histories[i]!, item.outputTokens, cmp.panels.A.final.requests[i]!, cmp.panels.A.final.iterationsStarted, slo),
+        B: requestMetrics(cmp.panels.B.histories[i]!, item.outputTokens, cmp.panels.B.final.requests[i]!, cmp.panels.B.final.iterationsStarted, slo),
       })),
     [cmp, slo],
   );

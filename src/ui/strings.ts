@@ -177,7 +177,7 @@ export const S = {
     activeLimitReached: r => `All ${r.limit} active-sequence slots are taken (head of the queue).`,
     reservationDoesNotFit: r => `Needs ${r.needBlocks} reserved blocks, but only ${r.unreservedBlocks} are unreserved (head of the queue).`,
     queuedBehind: (r, id) => `FIFO: queued behind ${id(r.head)}, which cannot be admitted yet.`,
-    awaitingDecision: () => 'Arrived after the last admission decision. Considered when the running iteration ends.',
+    awaitingDecision: () => 'Fits now. Admitted at the next decision instant.',
   } satisfies Catalog<WaitReason>,
   infeasible: {
     reservationExceedsPool: r => `Needs ${r.needBlocks} blocks to finish, but the empty pool has ${r.totalBlocks}. Rejected at arrival.`,
@@ -261,7 +261,8 @@ export const S = {
     rows: {
       completed: 'Completed',
       infeasible: 'Infeasible',
-      unfinished: 'Unfinished or waiting',
+      unfinished: 'Unfinished',
+      waiting: 'Waiting',
       queueDelay: 'Initial queue delay p50',
       ttftP50: 'TTFT p50',
       ttftP90: 'TTFT p90',

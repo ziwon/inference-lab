@@ -33,9 +33,9 @@ function groupWaiters(queued: IterationWaiter[]) {
   return groups;
 }
 
-export function IterationExplanation({ run, it, onSelectRequest }: { run: PanelRun; it: Iteration; onSelectRequest: (i: number) => void }) {
+export function IterationExplanation({ run, it, state, onSelectRequest }: { run: PanelRun; it: Iteration; state: Readonly<SimState>; onSelectRequest: (i: number) => void }) {
   const id = idOf(run);
-  const { queued, arrivedDuring } = iterationWaiters(run, it);
+  const { queued, arrivedDuring } = iterationWaiters(run, it, state);
   const reqButton = (i: number) => (
     <button type="button" className="link mono" onClick={() => onSelectRequest(i)}>
       {id(i)}
@@ -149,7 +149,7 @@ export function BatchInspector({ cmp, panel, state, onSelectRequest, onSelectIte
               <span>{S.batch.sequences(it.entries.length, run.limits.maxActiveSequences)}</span>
               <span>{formatMs(it.endUs - it.startUs)}</span>
             </div>
-            <IterationExplanation run={run} it={it} onSelectRequest={onSelectRequest} />
+            <IterationExplanation run={run} it={it} state={state} onSelectRequest={onSelectRequest} />
           </>
         )}
       </div>

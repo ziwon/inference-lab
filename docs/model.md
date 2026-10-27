@@ -175,7 +175,7 @@ All metrics are computed from event timestamps.
 
 - Percentiles use nearest rank: the value at rank ceil(p/100 × n) of the sorted sample. The UI prints the sample count n next to each percentile.
 - Empty samples, and throughput over a zero-length interval, are N/A, never 0, NaN, or infinity.
-- Completed, unfinished, waiting, and infeasible requests are counted separately. Infeasible and unfinished requests stay in the SLO denominator, so failures cannot make latency look better. TPOT is not checked for one-token outputs.
+- Completed, unfinished, waiting, and infeasible requests are counted separately. Infeasible and unfinished requests stay in the SLO denominator, so failures cannot make latency look better. When a run stops at a safety limit, requests it never reached also count as unfinished. TPOT is not checked for one-token outputs.
 - The request-level outcome table lists every request's status, TTFT, E2E, and SLO result in both panels.
 
 These definitions resemble vLLM's production metrics `vllm:time_to_first_token_seconds`, `vllm:inter_token_latency_seconds`, `vllm:request_time_per_output_token_seconds`, `vllm:e2e_request_latency_seconds`, and `vllm:request_queue_time_seconds` ([metrics page](https://docs.vllm.ai/en/stable/usage/metrics/)). The names show which production signal each one corresponds to. vLLM does not necessarily compute them identically.
@@ -183,7 +183,7 @@ These definitions resemble vLLM's production metrics `vllm:time_to_first_token_s
 ## Determinism and stepping
 
 - The engine is pure TypeScript with no React, DOM, clock, or randomness outside the seeded trace generator. The same configuration and seed produce byte-identical exports.
-- One reducer (`applyEvent`) is the only writer of simulation state. The engine applies each event as it emits it. The UI reads state at a cursor by replaying events from the nearest checkpoint with the same reducer, so the UI can only show states the engine produced. Checkpoints are taken every max(64, events / 400) events.
+- One reducer (`applyEvent`) is the only writer of simulation state. The engine applies each event as it emits it. The UI reads state at a cursor by replaying events from the nearest checkpoint with the same reducer, so the UI can only show states the engine produced. Checkpoints are taken every max(64, events / 400) events. Per-request metrics, timeline marks, and wait reasons at the cursor are gated on that replayed state (phase, generated tokens, iterations started), not on the playhead time, so stepping through events that share a timestamp never shows a token, a release, or a wait figure the state has not reached.
 - The two panels' events merge by (time, A before B, event order). The playhead is a position in that merged list, so both panels stay synchronized by simulated time, and next and previous step one event in either panel.
 - Playback speed, frame rate, resizing, and tab visibility move only the playhead. The run is computed once per configuration.
 

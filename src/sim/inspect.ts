@@ -1,5 +1,5 @@
 import type { Iteration, PanelRun } from './engine.ts';
-import type { AdmissionBlock } from './scheduler.ts';
+import { type AdmissionBlock, decideAdmission } from './scheduler.ts';
 import { LIVE_PHASES, type RequestState, type SimState } from './state.ts';
 
 export interface MemoryRow {
@@ -66,7 +66,18 @@ function waitReasonAt(run: PanelRun, request: number, decision: Iteration | unde
 }
 
 export function waitReason(run: PanelRun, state: Readonly<SimState>, request: number): WaitReason {
-  return waitReasonAt(run, request, run.iterations[state.iterationsStarted - 1]);
+  const waiting = state.requests.flatMap((r, i) => (r.phase === 'waiting' && !run.infeasible[i] ? [i] : []));
+  const { admit, blocked } = decideAdmission({
+    waiting,
+    trace: run.trace,
+    activeCount: state.activeCount,
+    reservedBlocks: state.reservedBlocks,
+    totalBlocks: run.memory.totalBlocks,
+    limits: run.limits,
+    reservationOf: i => run.reservations[i]!,
+  });
+  if (!blocked || admit.length > 0) return { code: 'awaitingDecision' };
+  return blocked.request === request ? blocked.reason : { code: 'queuedBehind', head: blocked.request };
 }
 
 export function currentIteration(run: PanelRun, state: Readonly<SimState>): Iteration | null {
@@ -78,14 +89,14 @@ export interface IterationWaiter {
   reason: WaitReason;
 }
 
-export function iterationWaiters(run: PanelRun, it: Iteration): { queued: IterationWaiter[]; arrivedDuring: number[] } {
+export function iterationWaiters(run: PanelRun, it: Iteration, state: Readonly<SimState>): { queued: IterationWaiter[]; arrivedDuring: number[] } {
   const queued: IterationWaiter[] = [];
   const arrivedDuring: number[] = [];
   run.histories.forEach((h, request) => {
     if (h.infeasible) return;
     if (h.arrivalUs <= it.startUs && (h.admittedUs === null || h.admittedUs > it.startUs)) {
       queued.push({ request, reason: waitReasonAt(run, request, it) });
-    } else if (h.arrivalUs > it.startUs && h.arrivalUs < it.endUs) {
+    } else if (h.arrivalUs > it.startUs && h.arrivalUs < it.endUs && state.requests[request]!.phase !== 'pending') {
       arrivedDuring.push(request);
     }
   });

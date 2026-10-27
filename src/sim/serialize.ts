@@ -68,7 +68,7 @@ function exportPanel(cmp: Comparison, panel: PanelId) {
     policy: run.policy,
     limits: run.limits,
     outcome: run.outcome,
-    summary: summarize(run, run.endUs, cmp.config.slo),
+    summary: summarize(run, run.final, cmp.config.slo),
     events: exportEvents(run),
     iterations: run.iterations.map(it => ({
       index: it.index,

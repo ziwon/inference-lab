@@ -129,7 +129,7 @@ export function Timeline({ cmp, panel, state, at, range, selectedRequest, select
               {rows.map((i, k) => (
                 <g key={i} transform={`translate(0 ${k * ROW_H})`} onClick={() => onSelectRequest(i)} style={{ cursor: 'pointer' }}>
                   <rect width={plotW} height={ROW_H} fill={selectedRequest === i ? 'var(--raised)' : k % 2 ? 'transparent' : 'rgba(255,255,255,0.015)'} />
-                  <RowMarks run={run} h={run.histories[i]!} X={X} T={T} range={range} plotW={plotW} />
+                  <RowMarks run={run} h={run.histories[i]!} r={state.requests[i]!} started={state.iterationsStarted} X={X} T={T} range={range} plotW={plotW} />
                 </g>
               ))}
               {T >= range.t0 && T <= range.t1 && <line x1={X(T)} x2={X(T)} y1={0} y2={(last - first) * ROW_H} stroke="var(--accent)" strokeWidth={1.5} />}
@@ -216,9 +216,9 @@ function IterationStrip({
   );
 }
 
-function RowMarks({ run, h, X, T, range, plotW }: { run: PanelRun; h: RequestHistory; X: (t: number) => number; T: number; range: TimeRange; plotW: number }) {
+function RowMarks({ run, h, r, started, X, T, range, plotW }: { run: PanelRun; h: RequestHistory; r: Readonly<RequestState>; started: number; X: (t: number) => number; T: number; range: TimeRange; plotW: number }) {
   const mid = ROW_H / 2;
-  if (h.arrivalUs > T) return null;
+  if (r.phase === 'pending') return null;
   const right = Math.min(T, range.t1);
   const seg = (a: number, b: number) => {
     const lo = Math.max(a, range.t0);
@@ -226,7 +226,7 @@ function RowMarks({ run, h, X, T, range, plotW }: { run: PanelRun; h: RequestHis
     return hi < lo ? null : { x: X(lo), w: Math.max(0, X(hi) - X(lo)) };
   };
   const out: ReactNode[] = [];
-  if (h.infeasible) {
+  if (r.phase === 'infeasible') {
     const x = X(h.arrivalUs);
     if (h.arrivalUs >= range.t0 && h.arrivalUs <= range.t1) {
       out.push(<path key="x" d={`M${x - 4} ${mid - 4}l8 8m0 -8l-8 8`} stroke="var(--state-error)" strokeWidth={2} />);
@@ -238,25 +238,27 @@ function RowMarks({ run, h, X, T, range, plotW }: { run: PanelRun; h: RequestHis
     }
     return <>{out}</>;
   }
-  const waiting = seg(h.arrivalUs, h.admittedUs ?? Infinity);
+  const admitted = r.phase !== 'waiting';
+  const waiting = seg(h.arrivalUs, admitted ? h.admittedUs! : Infinity);
   if (waiting) out.push(<rect key="w" x={waiting.x} y={mid - 5} width={Math.max(waiting.w, 1)} height={10} fill="none" stroke="var(--state-waiting)" strokeDasharray="3 2" />);
-  const firstToken = h.tokenTimesUs[0] ?? Infinity;
-  if (h.admittedUs !== null) {
-    const adm = seg(h.admittedUs, firstToken);
+  const firstToken = r.generatedTokens > 0 ? h.tokenTimesUs[0]! : Infinity;
+  if (admitted) {
+    const adm = seg(h.admittedUs!, firstToken);
     if (adm) out.push(<rect key="a" x={adm.x} y={mid - 3} width={Math.max(adm.w, 1)} height={6} fill="none" stroke="var(--state-admitted)" />);
   }
   for (const c of h.prefills) {
+    if (c.iteration >= started) break;
     const it = run.iterations[c.iteration]!;
-    if (it.startUs > T) break;
     const s = seg(it.startUs, it.endUs);
     if (s) out.push(<rect key={`p${c.iteration}`} x={s.x} y={mid - 8} width={Math.max(s.w, 2)} height={16} fill="var(--state-prefill)" rx={1} />);
   }
   const decodes = h.decodeIterations;
-  if (decodes.length > 0 && run.iterations[decodes[0]!]!.startUs <= T) {
-    const lastDecode = run.iterations[decodes[decodes.length - 1]!]!;
+  const decodesStarted = lowerBound(decodes.length, k => decodes[k]!, started);
+  if (decodesStarted > 0) {
+    const lastDecode = run.iterations[decodes[decodesStarted - 1]!]!;
     const line = seg(firstToken, lastDecode.endUs);
-    const from = lowerBound(decodes.length, k => run.iterations[decodes[k]!]!.endUs, range.t0);
-    const to = lowerBound(decodes.length, k => run.iterations[decodes[k]!]!.startUs, right + 1);
+    const from = lowerBound(decodesStarted, k => run.iterations[decodes[k]!]!.endUs, range.t0);
+    const to = Math.min(decodesStarted, lowerBound(decodesStarted, k => run.iterations[decodes[k]!]!.startUs, right + 1));
     const dense = (to - from) * 3 > plotW;
     if (line) out.push(<rect key="dl" x={line.x} y={mid - (dense ? 3 : 1)} width={line.w} height={dense ? 6 : 2} fill="var(--state-decode)" />);
     if (!dense) {
@@ -268,14 +270,14 @@ function RowMarks({ run, h, X, T, range, plotW }: { run: PanelRun; h: RequestHis
     }
   }
   const tFrom = lowerBound(h.tokenTimesUs.length, k => h.tokenTimesUs[k]!, range.t0);
-  const tTo = lowerBound(h.tokenTimesUs.length, k => h.tokenTimesUs[k]!, right + 1);
+  const tTo = Math.min(r.generatedTokens, lowerBound(h.tokenTimesUs.length, k => h.tokenTimesUs[k]!, right + 1));
   const sparse = (tTo - tFrom) * 9 <= plotW;
   for (let k = tFrom; k < tTo; k++) {
     if (!sparse && k !== 0) continue;
     const x = X(h.tokenTimesUs[k]!);
     out.push(<path key={`t${k}`} d={`M${x} ${mid - 4}l3 4l-3 4l-3 -4z`} fill="var(--text)" />);
   }
-  if (h.releasedUs !== null && h.releasedUs <= T && h.releasedUs >= range.t0 && h.releasedUs <= range.t1) {
+  if (r.phase === 'completed' && h.releasedUs !== null && h.releasedUs >= range.t0 && h.releasedUs <= range.t1) {
     const x = X(h.releasedUs);
     out.push(<rect key="c" x={x} y={mid - 5} width={3} height={10} fill="var(--state-decode)" />);
     out.push(<path key="ck" d={`M${x + 6} ${mid}l2.5 3l5 -6`} stroke="var(--state-decode)" strokeWidth={1.6} fill="none" />);

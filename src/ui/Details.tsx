@@ -36,7 +36,7 @@ export function DetailsPanel({ cmp, at, states, selection, onSelect }: DetailsPr
       <div className="card-body">
         {selection === null && <p className="muted">{S.details.hint}</p>}
         {selection?.kind === 'request' && <RequestDetails cmp={cmp} at={at} states={states} request={selection.request} onSelect={onSelect} />}
-        {selection?.kind === 'iteration' && <IterationDetails cmp={cmp} panel={selection.panel} iteration={selection.iteration} onSelect={onSelect} />}
+        {selection?.kind === 'iteration' && <IterationDetails cmp={cmp} panel={selection.panel} iteration={selection.iteration} state={states[selection.panel]} onSelect={onSelect} />}
       </div>
     </section>
   );
@@ -46,9 +46,10 @@ function RequestDetails({ cmp, at, states, request, onSelect }: { cmp: Compariso
   const item = cmp.trace[request]!;
   const rows = PANEL_IDS.map(panel => {
     const run = cmp.panels[panel];
-    const r = states[panel].requests[request]!;
+    const s = states[panel];
+    const r = s.requests[request]!;
     const h = run.histories[request]!;
-    const m = requestMetrics(h, item.outputTokens, at.timeUs, cmp.config.slo);
+    const m = requestMetrics(h, item.outputTokens, r, s.iterationsStarted, cmp.config.slo);
     const id = (i: number) => run.trace[i]?.id ?? String(i);
     const blocks = liveBlockIds(run, r, request);
     const note =
@@ -56,7 +57,7 @@ function RequestDetails({ cmp, at, states, request, onSelect }: { cmp: Compariso
       : r.phase === 'waiting' ? explain(S.waitReason, waitReason(run, states[panel], request), id)
       : r.phase === 'completed' ? S.details.releasedNote(h.peakBlocks, item.promptTokens + item.outputTokens - 1)
       : null;
-    return { panel, r, h, m, blocks, note, run };
+    return { panel, s, r, h, m, blocks, note, run };
   });
   const line = (label: string, f: (x: (typeof rows)[number]) => string, testId?: string) => (
     <tr>
@@ -97,14 +98,14 @@ function RequestDetails({ cmp, at, states, request, onSelect }: { cmp: Compariso
             {line(S.details.allocatedBlocks, x => String(x.r.allocatedBlocks), 'detail-allocated')}
             {line(S.details.reservedBlocks, x => String(x.r.reservedBlocks), 'detail-reserved')}
             {line(S.details.blockIds, x => (x.blocks.length === 0 ? '–' : x.blocks.length > 8 ? `${x.blocks.slice(0, 8).join(', ')}, …` : x.blocks.join(', ')))}
-            {line(S.details.admitted, x => (x.h.admittedUs !== null && x.h.admittedUs <= at.timeUs ? formatMs(x.h.admittedUs) : S.common.na))}
+            {line(S.details.admitted, x => (x.h.admittedUs !== null && x.r.phase !== 'pending' && x.r.phase !== 'waiting' ? formatMs(x.h.admittedUs) : S.common.na))}
             {line(S.details.queueDelay, x => formatMs(x.m.queueDelayUs))}
             {line(S.details.ttft, x => formatMs(x.m.ttftUs), 'detail-ttft')}
             {line(S.details.tpot, x => formatMs(x.m.tpotUs))}
             {line(S.details.e2e, x => formatMs(x.m.e2eUs))}
             {line(S.details.maxItl, x => (x.m.itlUs.length === 0 ? S.common.na : formatMs(Math.max(...x.m.itlUs))))}
-            {line(S.details.chunks, x => String(x.h.prefills.filter(c => x.run.iterations[c.iteration]!.startUs <= at.timeUs).length))}
-            {line(S.details.decodes, x => String(x.h.decodeIterations.filter(i => x.run.iterations[i]!.startUs <= at.timeUs).length))}
+            {line(S.details.chunks, x => String(x.h.prefills.filter(c => c.iteration < x.s.iterationsStarted).length))}
+            {line(S.details.decodes, x => String(x.h.decodeIterations.filter(i => i < x.s.iterationsStarted).length))}
           </tbody>
         </table>
       </div>
@@ -130,7 +131,7 @@ function RequestDetails({ cmp, at, states, request, onSelect }: { cmp: Compariso
   );
 }
 
-function IterationDetails({ cmp, panel, iteration, onSelect }: { cmp: Comparison; panel: PanelId; iteration: number; onSelect: (s: Selection) => void }) {
+function IterationDetails({ cmp, panel, iteration, state, onSelect }: { cmp: Comparison; panel: PanelId; iteration: number; state: Readonly<SimState>; onSelect: (s: Selection) => void }) {
   const run = cmp.panels[panel];
   const it = run.iterations[iteration];
   if (!it) return null;
@@ -143,7 +144,7 @@ function IterationDetails({ cmp, panel, iteration, onSelect }: { cmp: Comparison
         <span>{S.batch.tokenBudget(it.prefillTokens + it.decodeTokens, run.limits.maxBatchTokens)}</span>
         <span>{S.batch.sequences(it.entries.length, run.limits.maxActiveSequences)}</span>
       </div>
-      <IterationExplanation run={run} it={it} onSelectRequest={request => onSelect({ kind: 'request', request })} />
+      <IterationExplanation run={run} it={it} state={state} onSelectRequest={request => onSelect({ kind: 'request', request })} />
       <h4 className="small">{S.details.cost}</h4>
       <CostTerms it={it} />
       <div className="row-between">
