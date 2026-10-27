@@ -277,7 +277,7 @@ function readTrace(r: Reader, t: Obj, maxContext: number): TraceSpec {
       outputTokens: r.range(t, 'outputTokens', 'trace', 1, LIMITS.outputTokens),
     };
     const longest = spec.promptTokens.max + spec.outputTokens.max;
-    if (longest > maxContext) r.issues.push({ path: 'trace', code: 'contextExceeded', params: { id: 'longest generated', total: longest, max: maxContext } });
+    if (longest > maxContext) r.issues.push({ path: 'trace', code: 'contextExceeded', params: { total: longest, max: maxContext } });
     return spec;
   }
   if (t.kind !== 'explicit') {

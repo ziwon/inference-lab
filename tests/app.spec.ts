@@ -65,6 +65,35 @@ test('changing a control re-runs both panels and marks per-panel overrides', asy
   await expect(page.getByTestId('config-issues')).toContainText('exceeds the 8192-token context limit');
 });
 
+test('configuration problems name the area in words, not the internal field path', async ({ page }) => {
+  await page.goto('/#scenario=long-prefill');
+  const issues = page.getByTestId('config-issues');
+  const budget = page.getByTestId('shared-maxBatchTokens');
+  await budget.fill('100');
+  await budget.press('Enter');
+  await expect(issues).toContainText('Panel A: Request R1 has 160 prompt tokens, more than the 100-token budget.');
+  await expect(issues).not.toContainText('panels.');
+  await budget.fill('8192');
+  await budget.press('Enter');
+  await expect(issues).toHaveCount(0);
+
+  const device = page.getByTestId('device-gib');
+  await device.fill('1');
+  await device.press('Enter');
+  await expect(issues.locator('li')).toHaveText(['Memory: Weights plus the runtime allowance do not fit in device memory.']);
+
+  await page.goto('/#scenario=kv-pressure');
+  const promptMax = page.getByTestId('prompt-max');
+  await promptMax.fill('9000');
+  await promptMax.press('Enter');
+  await expect(issues.locator('li')).toHaveText([/^Request trace: The longest generated request has P \+ G = \d+, which exceeds the 8192-token context limit\.$/]);
+});
+
+test('a share link that fails validation lists its problems without internal paths', async ({ page }) => {
+  await page.goto(`/#c=${Buffer.from(JSON.stringify({ version: 2 })).toString('base64url')}`);
+  await expect(page.getByTestId('notice').locator('li')).toHaveText(['Unsupported version. Expected version 1.']);
+});
+
 test('A/B comparison shows aggregate and request-level outcomes for the same trace', async ({ page }) => {
   await page.goto('/#scenario=burst');
   const table = page.getByTestId('results-table');

@@ -13,7 +13,7 @@ import { Results } from './Results.tsx';
 import { S, issueText } from './strings.ts';
 import { Legend, type TimeRange, Timeline } from './Timeline.tsx';
 
-type Notice = { tone: 'info' | 'error'; text: string; details?: string[] };
+type Notice = { tone: 'info' | 'error'; text: string; issues?: Issue[] };
 
 interface Loaded {
   config: SimConfig;
@@ -25,7 +25,7 @@ interface Loaded {
 
 function mustBuild(config: SimConfig): Comparison {
   const built = buildComparison(config);
-  if (!built.ok) throw new Error(`preset failed validation: ${built.error.map(issueText).join('; ')}`);
+  if (!built.ok) throw new Error(`preset failed validation: ${built.error.map(i => `${i.path} ${i.code}`).join('; ')}`);
   return built.value;
 }
 
@@ -78,7 +78,7 @@ function fromSource(source: LinkSource): { loaded: Loaded; hash: string | null }
       const decoded = decodeShare(source.encoded);
       const built = decoded.ok ? buildComparison(decoded.value) : decoded;
       if (!built.ok) {
-        return { loaded: fromScenario(DEFAULT_SCENARIO, { tone: 'error', text: S.app.shareInvalid, details: built.error.slice(0, 6).map(issueText) }), hash: `#scenario=${DEFAULT_SCENARIO}` };
+        return { loaded: fromScenario(DEFAULT_SCENARIO, { tone: 'error', text: S.app.shareInvalid, issues: built.error.slice(0, 6) }), hash: `#scenario=${DEFAULT_SCENARIO}` };
       }
       return { loaded: { config: built.value.config, cmp: built.value, scenarioId: null, speed: 100, notice: null }, hash: `#c=${source.encoded}` };
     }
@@ -107,6 +107,18 @@ function windowRange(cmp: Comparison, t: number, windowMs: number | null): TimeR
     t0 = Math.max(0, t1 - w);
   }
   return { t0, t1 };
+}
+
+function IssueList({ issues }: { issues: Issue[] }) {
+  return (
+    <ul>
+      {issues.map((issue, i) => (
+        <li key={`${i}-${issue.path}-${issue.code}`} data-issue-path={issue.path}>
+          {issueText(issue)}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function useNarrow() {
@@ -289,12 +301,12 @@ export function App() {
 
   const importFile = async (file: File) => {
     if (file.size > MAX_IMPORT_BYTES) {
-      setNotice({ tone: 'error', text: S.app.importFailed, details: [issueText({ path: 'import', code: 'tooLarge', params: { length: file.size, max: MAX_IMPORT_BYTES } })] });
+      setNotice({ tone: 'error', text: S.app.importFailed, issues: [{ path: 'import', code: 'tooLarge', params: { length: file.size, max: MAX_IMPORT_BYTES } }] });
       return;
     }
     const result = importText(await file.text());
     if (!result.ok) {
-      setNotice({ tone: 'error', text: S.app.importFailed, details: result.error.slice(0, 8).map(issueText) });
+      setNotice({ tone: 'error', text: S.app.importFailed, issues: result.error.slice(0, 8) });
       return;
     }
     setPlaying(false);
@@ -343,13 +355,7 @@ export function App() {
         <div className={`notice${notice.tone === 'error' ? ' error' : ''}`} role={notice.tone === 'error' ? 'alert' : 'status'} data-testid="notice">
           <div>
             <p>{notice.text}</p>
-            {notice.details && (
-              <ul>
-                {notice.details.map(d => (
-                  <li key={d}>{d}</li>
-                ))}
-              </ul>
-            )}
+            {notice.issues && <IssueList issues={notice.issues} />}
           </div>
           <button type="button" className="btn ghost" onClick={() => setNotice(null)}>
             {S.app.dismiss}
@@ -360,11 +366,7 @@ export function App() {
         <div className="notice error" role="alert" data-testid="config-issues">
           <div>
             <p>{S.app.invalidConfig}</p>
-            <ul>
-              {issues.slice(0, 8).map(i => (
-                <li key={`${i.path}-${i.code}`}>{issueText(i)}</li>
-              ))}
-            </ul>
+            <IssueList issues={issues.slice(0, 8)} />
           </div>
         </div>
       )}

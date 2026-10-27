@@ -314,6 +314,7 @@ export const S = {
     override: 'Override',
     overrideHint: 'Leave blank to use the shared value.',
     trace: 'Request trace',
+    traceRow: (n: number) => `Request trace, row ${n}`,
     seed: 'Seed',
     count: 'Requests',
     pattern: 'Arrival pattern',
@@ -362,12 +363,13 @@ const ISSUE_TEXT: Record<IssueCode, (p: Params) => string> = {
   empty: () => 'At least one request is required.',
   duplicateId: p => `Request id ${p?.id} appears more than once.`,
   rangeInverted: () => 'Minimum is larger than maximum.',
-  contextExceeded: p => `${p?.id}: P + G = ${p?.total} exceeds the ${p?.max}-token context limit.`,
+  contextExceeded: p =>
+    `${p?.id === undefined ? 'The longest generated request' : `Request ${p.id}`} has P + G = ${p?.total}, which exceeds the ${p?.max}-token context limit.`,
   weightsDoNotFit: () => 'Weights plus the runtime allowance do not fit in device memory.',
   noKvBlocks: () => 'The remaining memory does not hold a single KV block.',
   zeroDurationWork: p => `A ${p?.kind} iteration would take zero modeled time. Give it a positive cost term.`,
   promptExceedsWholePrefillBudget: p =>
-    `Panel ${p?.panel}: request ${p?.id} has ${p?.promptTokens} prompt tokens, more than the ${p?.budget}-token budget. The whole-prefill policy cannot run it. Raise the budget or use chunked prefill.`,
+    `Request ${p?.id} has ${p?.promptTokens} prompt tokens, more than the ${p?.budget}-token budget. The whole-prefill policy cannot run it. Raise the budget or use chunked prefill.`,
   kvHeadsExceedQueryHeads: () => 'KV heads cannot exceed query heads.',
   queryHeadsNotGrouped: p => `${p?.query} query heads do not split evenly into groups for ${p?.kv} KV heads. MHA and GQA need query heads to be a multiple of KV heads.`,
   tooManyKvBlocks: p =>
@@ -375,7 +377,36 @@ const ISSUE_TEXT: Record<IssueCode, (p: Params) => string> = {
   tooLarge: p => `Too large (${p?.length ?? p?.total} > ${p?.max}). Export and import JSON for large traces.`,
 };
 
-export const issueText = (issue: { path: string; code: IssueCode; params?: Params }) => `${issue.path}: ${ISSUE_TEXT[issue.code](issue.params)}`;
+function issueArea(path: string): string | null {
+  const [root, field] = path.split('.');
+  const row = /^trace\.requests\[(\d+)\]/.exec(path);
+  switch (root) {
+    case 'architecture':
+      return S.config.architecture;
+    case 'memory':
+      return S.config.memory;
+    case 'scheduler':
+      return S.config.scheduler;
+    case 'cost':
+      return S.config.cost;
+    case 'slo':
+      return S.config.slo;
+    case 'trace':
+      return row ? S.config.traceRow(Number(row[1]) + 1) : S.config.trace;
+    case 'panels':
+      return field ? S.panel(field) : S.config.panels;
+    case 'config':
+      return field === 'seed' ? S.config.seed : null;
+    default:
+      return null;
+  }
+}
+
+export function issueText(issue: { path: string; code: IssueCode; params?: Params }): string {
+  const area = issueArea(issue.path);
+  const message = ISSUE_TEXT[issue.code](issue.params);
+  return area === null ? message : `${area}: ${message}`;
+}
 
 export function explain<U extends { code: string }>(catalog: Catalog<U>, reason: U, id: (i: number) => string): string {
   const f = catalog[reason.code as U['code']] as unknown as (r: U, id: (i: number) => string) => string;
