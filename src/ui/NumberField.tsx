@@ -9,7 +9,6 @@ interface Props {
   max: number;
   step?: number;
   integer?: boolean;
-  /** Blank commits undefined, used for per-panel overrides. */
   optional?: boolean;
   placeholder?: string;
   wide?: boolean;
@@ -17,7 +16,6 @@ interface Props {
   testId?: string;
 }
 
-/** Keeps a text draft so typing never fights validation; commits on blur or Enter. */
 export function NumberField({ label, value, onCommit, min, max, step, integer, optional, placeholder, wide, badge, testId }: Props) {
   const id = useId();
   const shown = value === undefined ? '' : String(value);

@@ -8,7 +8,6 @@ export const EXPORT_SCHEMA_VERSION = 1;
 export const MAX_SHARE_LENGTH = 8000;
 export const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
 
-/** Plain-data model assumptions written into every export so the file explains itself. */
 export const MODEL_ASSUMPTIONS = {
   scope: 'One logical GPU, decoder-only Transformer, full attention, MHA/GQA via KV-head count. Educational model, not a hardware benchmark.',
   tokens: 'A final prefill chunk emits the first output token. Each decode consumes the previous token (one KV entry) and emits the next. A request reaches P + G - 1 KV positions before release.',
@@ -95,11 +94,9 @@ export function exportRun(cmp: Comparison): ExportDoc {
 
 export interface Imported {
   comparison: Comparison;
-  /** 'matches' when the file's event history equals the rebuild, 'absent' for a bare configuration. */
   history: 'matches' | 'differs' | 'absent';
 }
 
-/** Accepts an export document or a bare configuration. The text is parsed as JSON data only. */
 export function importText(text: string): Result<Imported, Issue[]> {
   if (text.length > MAX_IMPORT_BYTES) return err([{ path: 'import', code: 'tooLarge', params: { length: text.length, max: MAX_IMPORT_BYTES } }]);
   let data: unknown;

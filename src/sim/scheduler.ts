@@ -23,8 +23,7 @@ export interface PlannedEntry {
   kind: 'prefill' | 'decode';
   tokens: number;
   cachedBefore: number;
-  /** A final prefill chunk emits the first output token. */
-  final: boolean;
+  emitsFirstToken: boolean;
   reason: EntryReason;
 }
 
@@ -42,26 +41,19 @@ export interface Plan {
 export interface PlanInput {
   requests: readonly RequestState[];
   trace: readonly TraceItem[];
-  /** Admitted, unfinished requests in admission (FIFO) order. */
-  active: readonly number[];
+  activeInAdmissionOrder: readonly number[];
   limits: SchedulerLimits;
 }
 
-/**
- * Shared decode order for both policies: least recently served first, ties by admission order.
- * When the token budget cannot serve every decode, this rotates service across iterations.
- */
+const leastRecentlyServedFirst = (requests: readonly RequestState[]) => (x: number, y: number) =>
+  requests[x]!.lastServedIteration - requests[y]!.lastServedIteration || x - y;
+
 export function decodeOrder(input: PlanInput): number[] {
-  return input.active
-    .filter(i => {
-      const r = input.requests[i]!;
-      return r.phase === 'decoding';
-    })
-    .sort((x, y) => input.requests[x]!.lastServedIteration - input.requests[y]!.lastServedIteration || x - y);
+  return input.activeInAdmissionOrder.filter(i => input.requests[i]!.phase === 'decoding').sort(leastRecentlyServedFirst(input.requests));
 }
 
 const prefillQueue = (input: PlanInput) =>
-  input.active.filter(i => {
+  input.activeInAdmissionOrder.filter(i => {
     const p = input.requests[i]!.phase;
     return p === 'admitted' || p === 'prefilling';
   });
@@ -87,12 +79,11 @@ function scheduleDecodes(input: PlanInput, budget: Budget, plan: Plan, code: 'de
       plan.skipped.push({ request, kind: 'decode', reason: { code: 'tokenBudgetExhausted', rank } });
     } else {
       budget.take(1);
-      plan.entries.push({ request, kind: 'decode', tokens: 1, cachedBefore: input.requests[request]!.cachedTokens, final: false, reason: { code, rank } });
+      plan.entries.push({ request, kind: 'decode', tokens: 1, cachedBefore: input.requests[request]!.cachedTokens, emitsFirstToken: false, reason: { code, rank } });
     }
   });
 }
 
-/** Policy A: FIFO whole prompts first, never split. Stop at the first prompt that does not fit, then fill with decodes. */
 function planWholePrefill(input: PlanInput): Plan {
   const plan: Plan = { entries: [], skipped: [] };
   const budget = new Budget(input.limits);
@@ -109,14 +100,13 @@ function planWholePrefill(input: PlanInput): Plan {
       plan.skipped.push({ request, kind: 'prefill', reason: { code: 'wholePromptDoesNotFit', promptTokens, remainingTokens: budget.tokens } });
     } else {
       budget.take(promptTokens);
-      plan.entries.push({ request, kind: 'prefill', tokens: promptTokens, cachedBefore: 0, final: true, reason: { code: 'wholePrompt' } });
+      plan.entries.push({ request, kind: 'prefill', tokens: promptTokens, cachedBefore: 0, emitsFirstToken: true, reason: { code: 'wholePrompt' } });
     }
   }
   scheduleDecodes(input, budget, plan, 'decodeWithRemainingBudget');
   return plan;
 }
 
-/** Policy B: decodes first, then FIFO prefill chunks that continue from each prompt's cached prefix. */
 function planChunkedPrefill(input: PlanInput): Plan {
   const plan: Plan = { entries: [], skipped: [] };
   const budget = new Budget(input.limits);
@@ -135,12 +125,11 @@ function planChunkedPrefill(input: PlanInput): Plan {
     const tokens = Math.min(remainingPrompt, input.limits.maxPrefillChunkTokens, budget.tokens);
     const limitedBy = tokens === remainingPrompt ? 'promptEnd' : tokens === input.limits.maxPrefillChunkTokens ? 'chunkLimit' : 'tokenBudget';
     budget.take(tokens);
-    plan.entries.push({ request, kind: 'prefill', tokens, cachedBefore, final: tokens === remainingPrompt, reason: { code: 'prefillChunk', limitedBy } });
+    plan.entries.push({ request, kind: 'prefill', tokens, cachedBefore, emitsFirstToken: tokens === remainingPrompt, reason: { code: 'prefillChunk', limitedBy } });
   }
   return plan;
 }
 
-/** Extension point: a third policy is one entry here plus its strings. */
 export const POLICIES: Record<PolicyId, (input: PlanInput) => Plan> = {
   'whole-prefill': planWholePrefill,
   'chunked-prefill': planChunkedPrefill,
@@ -156,7 +145,6 @@ export interface AdmissionInput {
   reservationOf: (request: number) => number;
 }
 
-/** Strict FIFO. The head is admitted only with a free sequence slot and a completion reservation that fits. */
 export function decideAdmission(input: AdmissionInput): { admit: number[]; blocked: { request: number; reason: AdmissionBlock } | null } {
   const admit: number[] = [];
   let active = input.activeCount;

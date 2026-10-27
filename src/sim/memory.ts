@@ -1,7 +1,6 @@
 import type { Architecture, MemoryConfig } from './config.ts';
 import { ceilDiv } from './units.ts';
 
-/** Static memory budget for one logical GPU. Every value is in bytes unless its name says otherwise. */
 export interface MemoryPlan {
   deviceBytes: number;
   packedWeightBytes: number;
@@ -13,13 +12,13 @@ export interface MemoryPlan {
   blockSizeTokens: number;
   kvPoolBytes: number;
   totalBlocks: number;
-  /** Bytes left after the pool is cut into whole blocks. */
   unusableTailBytes: number;
   metadataDeclared: boolean;
 }
 
-/** Full-attention decoder only: keys and values (factor 2) for every layer and KV head. */
-export const kvBytesPerToken = (a: Architecture, kvElementBytes: number) => 2 * a.numLayers * a.numKvHeads * a.headDim * kvElementBytes;
+const KEY_AND_VALUE = 2;
+
+export const kvBytesPerToken = (a: Architecture, kvElementBytes: number) => KEY_AND_VALUE * a.numLayers * a.numKvHeads * a.headDim * kvElementBytes;
 
 export function planMemory(a: Architecture, m: MemoryConfig): MemoryPlan {
   const packedWeightBytes = Math.ceil((a.parameterCount * m.weightBits) / 8);
@@ -47,14 +46,11 @@ export function planMemory(a: Architecture, m: MemoryConfig): MemoryPlan {
 
 export const blocksFor = (tokens: number, blockSizeTokens: number) => ceilDiv(tokens, blockSizeTokens);
 
-/** This simulator's admission policy: reserve enough blocks to finish, P + G - 1 populated positions. */
-export const completionReservation = (promptTokens: number, outputTokens: number, blockSizeTokens: number) =>
-  blocksFor(promptTokens + outputTokens - 1, blockSizeTokens);
+export const kvPositionsAtCompletion = (promptTokens: number, outputTokens: number) => promptTokens + outputTokens - 1;
 
-/**
- * Block ids for the engine run. Fresh ids ascend from a high-water mark and freed ids are reused LIFO,
- * so the pool never materializes an array the size of the device.
- */
+export const completionReservation = (promptTokens: number, outputTokens: number, blockSizeTokens: number) =>
+  blocksFor(kvPositionsAtCompletion(promptTokens, outputTokens), blockSizeTokens);
+
 export class BlockAllocator {
   private recycled: number[] = [];
   private nextFresh = 0;

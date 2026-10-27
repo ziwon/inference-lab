@@ -13,18 +13,15 @@ export interface Comparison {
   trace: TraceItem[];
   memory: MemoryPlan;
   panels: Record<PanelId, PanelRun>;
-  /** Both panels' events merged by (time, A before B, event order). Playheads index into this. */
   steps: {
     timeUs: number[];
     panel: PanelId[];
     event: number[];
-    /** applied[p][k]: how many of panel p's events are applied after the first k merged steps. */
-    applied: Record<PanelId, Int32Array>;
+    appliedAfterStep: Record<PanelId, Int32Array>;
   };
   endUs: number;
 }
 
-/** Checks rules that need more than one field. `parseConfig` has already checked shape and ranges. */
 export function semanticIssues(config: SimConfig, trace: readonly TraceItem[], memory: MemoryPlan): Issue[] {
   const issues: Issue[] = [];
   if (memory.kvPoolBytes <= 0) {
@@ -74,7 +71,7 @@ function mergeSteps(panels: Record<PanelId, PanelRun>): Comparison['steps'] {
   const timeUs: number[] = [];
   const panel: PanelId[] = [];
   const event: number[] = [];
-  const applied = { A: new Int32Array(total + 1), B: new Int32Array(total + 1) };
+  const appliedAfterStep = { A: new Int32Array(total + 1), B: new Int32Array(total + 1) };
   let i = 0;
   let j = 0;
   for (let k = 0; k < total; k++) {
@@ -88,13 +85,12 @@ function mergeSteps(panels: Record<PanelId, PanelRun>): Comparison['steps'] {
       panel.push('B');
       event.push(j++);
     }
-    applied.A[k + 1] = i;
-    applied.B[k + 1] = j;
+    appliedAfterStep.A[k + 1] = i;
+    appliedAfterStep.B[k + 1] = j;
   }
-  return { timeUs, panel, event, applied };
+  return { timeUs, panel, event, appliedAfterStep };
 }
 
-/** Number of merged steps whose time is at or before t. */
 export function appliedAtTime(cmp: Comparison, timeUs: number): number {
   const times = cmp.steps.timeUs;
   let lo = 0;
@@ -124,4 +120,4 @@ export function seekStep(cmp: Comparison, applied: number): Playhead {
   return { applied: k, timeUs: k === 0 ? (cmp.steps.timeUs[0] ?? 0) : cmp.steps.timeUs[k - 1]! };
 }
 
-export const panelApplied = (cmp: Comparison, at: Playhead, panel: PanelId) => cmp.steps.applied[panel][at.applied]!;
+export const panelApplied = (cmp: Comparison, at: Playhead, panel: PanelId) => cmp.steps.appliedAfterStep[panel][at.applied]!;

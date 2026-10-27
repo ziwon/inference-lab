@@ -10,13 +10,11 @@ export interface RequestMetrics {
   queueDelayUs: number | null;
   ttftUs: number | null;
   e2eUs: number | null;
-  /** (last - first) / (G - 1); null when G = 1 or the request has not finished. */
   tpotUs: number | null;
   itlUs: number[];
   meetsSlo: boolean;
 }
 
-/** Empty samples have n = 0 and null statistics, never 0, NaN, or Infinity. */
 export interface Distribution {
   n: number;
   mean: number | null;
@@ -34,7 +32,6 @@ export interface Summary {
   tpot: Distribution;
   e2e: Distribution;
   itl: Distribution;
-  /** First arrival to the horizon. Throughput is null when the interval has zero length. */
   interval: { startUs: number; endUs: number };
   completedPerSec: number | null;
   outputTokensPerSec: number | null;

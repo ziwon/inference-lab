@@ -7,7 +7,6 @@ export type ScenarioId = (typeof SCENARIO_IDS)[number];
 export interface Scenario {
   id: ScenarioId;
   config: SimConfig;
-  /** Playback speed in modeled milliseconds per wall-clock second that suits the scenario's length. */
   playbackMsPerSec: number;
 }
 

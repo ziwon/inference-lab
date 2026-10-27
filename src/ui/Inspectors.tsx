@@ -23,7 +23,6 @@ function BudgetMeter({ it, budget }: { it: Iteration; budget: number }) {
   );
 }
 
-/** Consecutive waiters with the same reason share one row, so a long FIFO queue reads as one line. */
 function groupWaiters(queued: IterationWaiter[]) {
   const groups: { requests: number[]; reason: WaitReason }[] = [];
   for (const q of queued) {
@@ -34,7 +33,6 @@ function groupWaiters(queued: IterationWaiter[]) {
   return groups;
 }
 
-/** Why each request ran or waited in one iteration. Shared by the batch inspector and the details view. */
 export function IterationExplanation({ run, it, onSelectRequest }: { run: PanelRun; it: Iteration; onSelectRequest: (i: number) => void }) {
   const id = idOf(run);
   const { queued, arrivedDuring } = iterationWaiters(run, it);
@@ -62,7 +60,7 @@ export function IterationExplanation({ run, it, onSelectRequest }: { run: PanelR
                 <td>
                   <span className="kind">
                     <Swatch color={e.kind === 'prefill' ? 'var(--state-prefill)' : 'var(--state-decode)'} />
-                    {e.kind === 'prefill' ? S.batch.prefillWork(e.tokens, e.cachedBefore, e.final) : S.batch.decodeWork(e.cachedBefore + 1)}
+                    {e.kind === 'prefill' ? S.batch.prefillWork(e.tokens, e.cachedBefore, e.emitsFirstToken) : S.batch.decodeWork(e.cachedBefore + 1)}
                   </span>
                   <div className="muted">{S.batch.newBlocks(e.newBlocks)}</div>
                 </td>
@@ -200,9 +198,9 @@ export function MemoryInspector({ cmp, panel, state, onSelectRequest }: { cmp: C
               {formatInt(v.allocatedBlocks)} / {formatInt(v.totalBlocks)}
             </span>
           </div>
-          <div className="meter" role="img" aria-label={`${S.memory.allocated} ${v.allocatedBlocks}, ${S.memory.headroom} ${v.headroomBlocks}, ${S.memory.unreserved} ${v.unreservedBlocks}`}>
+          <div className="meter" role="img" aria-label={`${S.memory.allocated} ${v.allocatedBlocks}, ${S.memory.headroom} ${v.reservedUnallocatedBlocks}, ${S.memory.unreserved} ${v.unreservedBlocks}`}>
             <div style={{ width: bpct(v.allocatedBlocks), background: 'var(--state-decode)' }} />
-            <div className="hatch" style={{ width: bpct(v.headroomBlocks) }} />
+            <div className="hatch" style={{ width: bpct(v.reservedUnallocatedBlocks) }} />
           </div>
           <div className="legend" style={{ border: 0, padding: 0 }}>
             <span><Swatch color="var(--state-decode)" />{S.memory.allocated}</span>
@@ -217,7 +215,7 @@ export function MemoryInspector({ cmp, panel, state, onSelectRequest }: { cmp: C
             <dt>{S.memory.allocated}</dt>
             <dd data-testid={`allocated-${panel}`}>{S.memory.blockUnit(v.allocatedBlocks)} · {formatBytes(v.allocatedBlocks * m.kvBlockBytes)}</dd>
             <dt>{S.memory.headroom}</dt>
-            <dd data-testid={`headroom-${panel}`}>{S.memory.blockUnit(v.headroomBlocks)}</dd>
+            <dd data-testid={`headroom-${panel}`}>{S.memory.blockUnit(v.reservedUnallocatedBlocks)}</dd>
             <dt>{S.memory.unreserved}</dt>
             <dd>{S.memory.blockUnit(v.unreservedBlocks)}</dd>
             <dt>{S.memory.free}</dt>

@@ -1,19 +1,12 @@
 import type { TraceItem } from './trace.ts';
 
-/**
- * pending: not arrived yet. waiting: arrived, not admitted. admitted: holds a reservation, no prompt token cached.
- * prefilling: part of the prompt cached. decoding: first output token emitted. finished: all G tokens emitted, KV still held.
- * completed: KV and reservation released. infeasible: rejected at arrival.
- */
-export type Phase = 'pending' | 'waiting' | 'infeasible' | 'admitted' | 'prefilling' | 'decoding' | 'finished' | 'completed';
+export type Phase = 'pending' | 'waiting' | 'infeasible' | 'admitted' | 'prefilling' | 'decoding' | 'awaitingRelease' | 'completed';
 
-export const LIVE_PHASES: readonly Phase[] = ['admitted', 'prefilling', 'decoding', 'finished'];
+export const LIVE_PHASES: readonly Phase[] = ['admitted', 'prefilling', 'decoding', 'awaitingRelease'];
 
 export interface RequestState {
   phase: Phase;
-  /** Populated KV positions. */
   cachedTokens: number;
-  /** Tokens whose K/V the executing iteration is writing. Zero between iterations. */
   inflightTokens: number;
   generatedTokens: number;
   allocatedBlocks: number;
@@ -47,14 +40,15 @@ export type SimEvent =
   | { kind: 'released'; timeUs: number; request: number; freedBlocks: number; freedReservation: number }
   | { kind: 'runEnded'; timeUs: number; outcome: RunOutcome };
 
-/** The part of an iteration record the reducer needs. */
 export interface AppliedEntry {
   request: number;
   kind: 'prefill' | 'decode';
   tokens: number;
   newBlocks: number;
-  final: boolean;
+  emitsFirstToken: boolean;
 }
+
+export const emitsToken = (entry: Pick<AppliedEntry, 'kind' | 'emitsFirstToken'>) => entry.kind === 'decode' || entry.emitsFirstToken;
 
 export interface ReducerContext {
   trace: readonly TraceItem[];
@@ -90,10 +84,6 @@ const fail = (e: SimEvent, why: string): never => {
   throw new Error(`illegal ${e.kind} at ${e.timeUs}us: ${why}`);
 };
 
-/**
- * The only writer of simulation state. The engine applies each event as it emits it, and cursor reads
- * replay the same events from a checkpoint, so a displayed state is always one the engine produced.
- */
 export function applyEvent(s: SimState, e: SimEvent, ctx: ReducerContext): void {
   if (e.timeUs < s.timeUs) fail(e, 'time moved backward');
   s.timeUs = e.timeUs;
@@ -140,10 +130,10 @@ export function applyEvent(s: SimState, e: SimEvent, ctx: ReducerContext): void 
         const item = ctx.trace[entry.request]!;
         r.cachedTokens += r.inflightTokens;
         r.inflightTokens = 0;
-        if (entry.kind === 'decode' || entry.final) r.generatedTokens += 1;
+        if (emitsToken(entry)) r.generatedTokens += 1;
         r.phase =
           r.cachedTokens < item.promptTokens ? 'prefilling'
-          : r.generatedTokens === item.outputTokens ? 'finished'
+          : r.generatedTokens === item.outputTokens ? 'awaitingRelease'
           : 'decoding';
       }
       s.peakAllocatedBlocks = Math.max(s.peakAllocatedBlocks, s.allocatedBlocks);
@@ -151,7 +141,7 @@ export function applyEvent(s: SimState, e: SimEvent, ctx: ReducerContext): void 
     }
     case 'released': {
       const r = s.requests[e.request]!;
-      if (r.phase !== 'finished') fail(e, `request ${e.request} is ${r.phase}`);
+      if (r.phase !== 'awaitingRelease') fail(e, `request ${e.request} is ${r.phase}`);
       if (e.freedBlocks !== r.allocatedBlocks || e.freedReservation !== r.reservedBlocks) fail(e, 'release does not match holdings');
       s.allocatedBlocks -= r.allocatedBlocks;
       s.reservedBlocks -= r.reservedBlocks;

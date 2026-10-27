@@ -34,7 +34,6 @@ function fromScenario(id: ScenarioId, notice: Notice | null = null): Loaded {
   return { config: s.config, cmp: mustBuild(s.config), scenarioId: id, speed: s.playbackMsPerSec, notice };
 }
 
-/** Reads `#c=<config>` or `#scenario=<id>`. A bad link falls back to the default scenario with a notice. */
 function loadFromHash(hash: string): Loaded {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
   const preset = params.get('scenario');

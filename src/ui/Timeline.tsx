@@ -29,7 +29,6 @@ function useWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
-/** First index whose value is >= target in an ascending list. */
 function lowerBound(n: number, valueAt: (i: number) => number, target: number) {
   let lo = 0;
   let hi = n;
@@ -294,7 +293,7 @@ export function PhaseGlyph({ phase }: { phase: RequestState['phase'] }) {
     case 'prefilling':
       return <svg {...common}><rect x={2} y={0} width={6} height={10} fill="var(--state-prefill)" /></svg>;
     case 'decoding':
-    case 'finished':
+    case 'awaitingRelease':
       return <svg {...common}><rect x={0} y={4} width={10} height={2} fill="var(--state-decode)" /><rect x={4} y={2} width={2} height={6} fill="var(--state-decode)" /></svg>;
     case 'completed':
       return <svg {...common}><path d="M1 5l3 3l5 -6" stroke="var(--state-decode)" strokeWidth={1.6} fill="none" /></svg>;

@@ -14,13 +14,11 @@ export interface MemoryRow {
 export interface MemoryView {
   totalBlocks: number;
   allocatedBlocks: number;
-  /** Reserved for admitted requests but not yet holding KV. An accounting guarantee, not a second allocation. */
-  headroomBlocks: number;
+  reservedUnallocatedBlocks: number;
   unreservedBlocks: number;
   freeBlocks: number;
   cachedTokens: number;
   inflightTokens: number;
-  /** Unused token slots inside allocated blocks, summed per request. */
   fragmentationTokens: number;
   peakAllocatedBlocks: number;
   rows: MemoryRow[];
@@ -44,7 +42,7 @@ export function memoryView(run: PanelRun, state: Readonly<SimState>): MemoryView
   return {
     totalBlocks: run.memory.totalBlocks,
     allocatedBlocks: state.allocatedBlocks,
-    headroomBlocks: state.reservedBlocks - state.allocatedBlocks,
+    reservedUnallocatedBlocks: state.reservedBlocks - state.allocatedBlocks,
     unreservedBlocks: run.memory.totalBlocks - state.reservedBlocks,
     freeBlocks: run.memory.totalBlocks - state.allocatedBlocks,
     cachedTokens: sum(row => row.cachedTokens),
@@ -60,7 +58,6 @@ export type WaitReason =
   | { code: 'queuedBehind'; head: number }
   | { code: 'awaitingDecision' };
 
-/** Why a waiting request is not admitted, from the admission decision made at iteration `decision`. */
 function waitReasonAt(run: PanelRun, request: number, decision: Iteration | undefined): WaitReason {
   const arrivalUs = run.trace[request]!.arrivalUs;
   if (!decision || arrivalUs > decision.startUs || !decision.blocked) return { code: 'awaitingDecision' };
@@ -72,7 +69,6 @@ export function waitReason(run: PanelRun, state: Readonly<SimState>, request: nu
   return waitReasonAt(run, request, run.iterations[state.iterationsStarted - 1]);
 }
 
-/** The iteration executing at the cursor, or the most recent one. */
 export function currentIteration(run: PanelRun, state: Readonly<SimState>): Iteration | null {
   return run.iterations[state.iterationsStarted - 1] ?? null;
 }
@@ -82,7 +78,6 @@ export interface IterationWaiter {
   reason: WaitReason;
 }
 
-/** Requests that were waiting for admission when the iteration was planned, and those that arrived while it ran. */
 export function iterationWaiters(run: PanelRun, it: Iteration): { queued: IterationWaiter[]; arrivedDuring: number[] } {
   const queued: IterationWaiter[] = [];
   const arrivedDuring: number[] = [];
@@ -98,5 +93,5 @@ export function iterationWaiters(run: PanelRun, it: Iteration): { queued: Iterat
 }
 
 export function liveBlockIds(run: PanelRun, r: RequestState, request: number): number[] {
-  return run.blockIds[request]!.slice(0, r.allocatedBlocks);
+  return run.blockAllocationOrder[request]!.slice(0, r.allocatedBlocks);
 }

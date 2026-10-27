@@ -8,7 +8,6 @@ import type { InfeasibleReason, Phase, RunOutcome } from '../sim/state.ts';
 type Params = Record<string, number | string> | undefined;
 type Catalog<U extends { code: string }> = { [C in U['code']]: (r: Extract<U, { code: C }>, id: (i: number) => string) => string };
 
-/** English UI text. Every component reads its copy from here; the engine returns codes and numbers only. */
 export const S = {
   app: {
     title: 'Inference Lab',
@@ -83,7 +82,7 @@ export const S = {
     admitted: 'Admitted',
     prefilling: 'Prefilling',
     decoding: 'Decoding',
-    finished: 'Finished',
+    awaitingRelease: 'Awaiting release',
     completed: 'Completed',
   } satisfies Record<Phase, string>,
   status: {
@@ -145,7 +144,7 @@ export const S = {
     request: 'Request',
     work: 'Work',
     why: 'Why',
-    prefillWork: (tokens: number, from: number, final: boolean) => `Prefill ${tokens} tokens from position ${from}${final ? ', emits first token' : ''}`,
+    prefillWork: (tokens: number, from: number, emitsFirstToken: boolean) => `Prefill ${tokens} tokens from position ${from}${emitsFirstToken ? ', emits first token' : ''}`,
     decodeWork: (position: number) => `Decode: append KV position ${position}, emit next token`,
     newBlocks: (n: number) => (n === 0 ? 'no new block' : n === 1 ? '+1 block' : `+${n} blocks`),
     waitingWork: 'Waiting for admission',
@@ -379,7 +378,6 @@ export function explain<U extends { code: string }>(catalog: Catalog<U>, reason:
   return f(reason, id);
 }
 
-/** Model assumptions dialog. Equations are shown with the current coefficients filled in by the dialog. */
 export const MODEL_DOC = {
   intro:
     'Inference Lab is a deterministic, educational simulation of one logical GPU serving a decoder-only Transformer with full attention. It runs no model and measures no hardware. Every number comes from the equations below.',

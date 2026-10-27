@@ -10,6 +10,7 @@ import {
   type SimState,
   applyEvent,
   cloneState,
+  emitsToken,
   initialState,
 } from './state.ts';
 import type { TraceItem } from './trace.ts';
@@ -27,7 +28,6 @@ export interface Iteration {
   endUs: number;
   entries: IterationEntry[];
   skipped: Skip[];
-  /** Admission decided at this iteration's decision instant, before planning. */
   admitted: number[];
   blocked: { request: number; reason: AdmissionBlock } | null;
   prefillTokens: number;
@@ -41,7 +41,7 @@ export interface RequestHistory {
   infeasible: InfeasibleReason | null;
   admittedUs: number | null;
   firstExecUs: number | null;
-  prefills: { iteration: number; tokens: number; cachedBefore: number; final: boolean }[];
+  prefills: { iteration: number; tokens: number; cachedBefore: number; emitsFirstToken: boolean }[];
   decodeIterations: number[];
   tokenTimesUs: number[];
   releasedUs: number | null;
@@ -62,8 +62,7 @@ export interface PanelRun extends PanelInput {
   infeasible: (InfeasibleReason | null)[];
   events: SimEvent[];
   iterations: Iteration[];
-  /** Block ids per request in allocation order. A request's live blocks are always a prefix of this list. */
-  blockIds: number[][];
+  blockAllocationOrder: number[][];
   histories: RequestHistory[];
   outcome: RunOutcome;
   endUs: number;
@@ -75,12 +74,6 @@ export function reducerContext(run: Pick<PanelRun, 'trace' | 'iterations'>): Red
   return { trace: run.trace, entriesOf: i => run.iterations[i]!.entries };
 }
 
-/**
- * Runs one panel to its terminal event. Each decision instant at time t, in order:
- * complete the executing iteration, release finished requests in admission order, apply arrivals with
- * arrival <= t in trace order, admit FIFO, then plan and start the next iteration. Arrivals strictly inside
- * an iteration are recorded at their own time and wait for the next instant.
- */
 export function simulatePanel(input: PanelInput): PanelRun {
   const { trace, memory, limits } = input;
   const n = trace.length;
@@ -97,7 +90,7 @@ export function simulatePanel(input: PanelInput): PanelRun {
     applyEvent(state, e, ctx);
   };
   const allocator = new BlockAllocator(memory.totalBlocks);
-  const blockIds = trace.map((): number[] => []);
+  const blockAllocationOrder = trace.map((): number[] => []);
   let active: number[] = [];
   let nextArrival = 0;
   let nextAdmit = 0;
@@ -145,7 +138,7 @@ export function simulatePanel(input: PanelInput): PanelRun {
       break;
     }
 
-    const plan = POLICIES[input.policy]({ requests: state.requests, trace, active, limits });
+    const plan = POLICIES[input.policy]({ requests: state.requests, trace, activeInAdmissionOrder: active, limits });
     if (plan.entries.length === 0) {
       outcome = { code: 'stalled', waiting: waiting.length };
       break;
@@ -154,7 +147,7 @@ export function simulatePanel(input: PanelInput): PanelRun {
       const r = state.requests[entry.request]!;
       const newBlocks = blocksFor(entry.cachedBefore + entry.tokens, memory.blockSizeTokens) - r.allocatedBlocks;
       if (r.allocatedBlocks + newBlocks > r.reservedBlocks) throw new Error(`request ${entry.request} would exceed its reservation`);
-      for (let k = 0; k < newBlocks; k++) blockIds[entry.request]!.push(allocator.allocate());
+      for (let k = 0; k < newBlocks; k++) blockAllocationOrder[entry.request]!.push(allocator.allocate());
       return { ...entry, newBlocks };
     });
     const prefills = entries.filter(e => e.kind === 'prefill');
@@ -182,15 +175,15 @@ export function simulatePanel(input: PanelInput): PanelRun {
     emit({ kind: 'iterationCompleted', timeUs: t, iteration: index });
     for (const request of active) {
       const r = state.requests[request]!;
-      if (r.phase !== 'finished') continue;
-      allocator.free(blockIds[request]!);
+      if (r.phase !== 'awaitingRelease') continue;
+      allocator.free(blockAllocationOrder[request]!);
       emit({ kind: 'released', timeUs: t, request, freedBlocks: r.allocatedBlocks, freedReservation: r.reservedBlocks });
     }
     active = active.filter(i => state.requests[i]!.phase !== 'completed');
   }
   emit({ kind: 'runEnded', timeUs: t, outcome });
 
-  const base = { ...input, reservations, infeasible, events, iterations, blockIds, outcome, endUs: t, final: state };
+  const base = { ...input, reservations, infeasible, events, iterations, blockAllocationOrder, outcome, endUs: t, final: state };
   return { ...base, histories: buildHistories(base), checkpoints: buildCheckpoints(base) };
 }
 
@@ -219,9 +212,9 @@ function buildHistories(run: Pick<PanelRun, 'trace' | 'events' | 'iterations' | 
     for (const entry of it.entries) {
       const h = out[entry.request]!;
       h.firstExecUs ??= it.startUs;
-      if (entry.kind === 'prefill') h.prefills.push({ iteration: it.index, tokens: entry.tokens, cachedBefore: entry.cachedBefore, final: entry.final });
+      if (entry.kind === 'prefill') h.prefills.push({ iteration: it.index, tokens: entry.tokens, cachedBefore: entry.cachedBefore, emitsFirstToken: entry.emitsFirstToken });
       else h.decodeIterations.push(it.index);
-      if (entry.kind === 'decode' || entry.final) h.tokenTimesUs.push(it.endUs);
+      if (emitsToken(entry)) h.tokenTimesUs.push(it.endUs);
     }
   }
   return out;
@@ -241,7 +234,6 @@ function buildCheckpoints(run: Pick<PanelRun, 'trace' | 'events' | 'iterations'>
 
 const lastRead = new WeakMap<PanelRun, { applied: number; state: SimState }>();
 
-/** State after the first `applied` events (0 = before the first event). Replays from the nearest checkpoint. */
 export function stateAt(run: PanelRun, applied: number): Readonly<SimState> {
   const k = Math.max(0, Math.min(applied, run.events.length));
   const cached = lastRead.get(run);

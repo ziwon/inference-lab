@@ -2,11 +2,9 @@ import { buildComparison, type Comparison } from './compare.ts';
 import { CONFIG_VERSION, type CostModel, type MemoryConfig, type PanelSpec, type PolicyId, type SchedulerLimits, type SimConfig, type TraceRequest } from './config.ts';
 import { GIB } from './units.ts';
 
-/** One layer, one KV head, head dim 1, 1-byte KV: 2 bytes per token, so block math is easy to check by hand. */
 export const TINY_ARCH = { label: 'tiny', parameterCount: 1e6, numLayers: 1, numQueryHeads: 1, numKvHeads: 1, headDim: 1, maxContextTokens: 4096 };
 const WEIGHT_BYTES = 1e6;
 
-/** Every iteration lasts exactly 1 ms. */
 export const FLAT_COST: CostModel = { overheadMs: 1, prefillTokenMs: 0, attentionMsPerMillionPairs: 0, decodeSequenceMs: 0, decodeContextMsPerThousandTokens: 0 };
 
 export interface FixtureOptions {

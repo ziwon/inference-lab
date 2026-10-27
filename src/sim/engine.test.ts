@@ -7,7 +7,7 @@ import { auditRun } from './invariants.ts';
 import { SCENARIO_IDS, scenario } from './scenarios.ts';
 import { exportRun } from './serialize.ts';
 import { build, fixture, r, run } from './test-fixtures.ts';
-import { createRng } from './trace.ts';
+import { mulberry32 } from './trace.ts';
 
 const label = (p: ReturnType<typeof run>) =>
   p.events.map(e => `${e.kind}${'request' in e ? ` ${p.trace[e.request]!.id}` : ''}${'iteration' in e ? ` ${e.iteration}` : ''} @${e.timeUs}`);
@@ -120,7 +120,7 @@ test('the long-prefill preset shows the chunking tradeoff from the model, not a 
 });
 
 test('seeded random traces drain with no invariant violations under both policies', () => {
-  const rng = createRng(2024);
+  const rng = mulberry32(2024);
   for (let trial = 0; trial < 40; trial++) {
     const n = 1 + rng.int({ min: 0, max: 14 });
     const trace = Array.from({ length: n }, (_, i) => r(`t${i}`, rng.int({ min: 0, max: 8 }) / 2, rng.int({ min: 1, max: 30 }), rng.int({ min: 1, max: 12 })));

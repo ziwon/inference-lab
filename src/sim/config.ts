@@ -27,7 +27,6 @@ export interface Architecture {
 export interface MemoryConfig {
   deviceBytes: number;
   weightBits: number;
-  /** Declared allowance for quantization scales, zero points, and other weight metadata, as a percent of packed weights. */
   weightMetadataPercent: number;
   runtimeAllowanceBytes: number;
   kvElementBytes: number;
@@ -189,7 +188,6 @@ class Reader {
 const ID_PATTERN = /^[A-Za-z0-9_.-]+$/;
 const LABEL_PATTERN = /^[^<>]+$/;
 
-/** Parses untrusted data (URL, import, form state) into a structurally valid configuration. */
 export function parseConfig(input: unknown): Result<SimConfig, Issue[]> {
   const r = new Reader();
   const root = r.obj(input, 'config');

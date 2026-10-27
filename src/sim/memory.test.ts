@@ -73,7 +73,7 @@ test('reservation headroom is accounting, not a second allocation', () => {
   const after = p.events.findIndex(e => e.kind === 'iterationCompleted');
   const view = memoryView(p, stateAt(p, after + 1));
   assert.equal(view.allocatedBlocks, 2);
-  assert.equal(view.headroomBlocks, completionReservation(5, 12, 4) - 2);
+  assert.equal(view.reservedUnallocatedBlocks, completionReservation(5, 12, 4) - 2);
   assert.equal(view.freeBlocks, 64 - 2);
   assert.equal(view.unreservedBlocks, 64 - completionReservation(5, 12, 4));
 });
@@ -104,7 +104,7 @@ test('releases happen exactly once, return every block, and reuse ids without do
   assert.deepEqual([...released].sort((x, y) => x - y), trace.map((_, i) => i));
   assert.equal(p.final.allocatedBlocks, 0);
   assert.equal(p.final.reservedBlocks, 0);
-  assert.ok(Math.max(...p.blockIds.flat()) < 12, 'freed ids are reused inside the pool');
+  assert.ok(Math.max(...p.blockAllocationOrder.flat()) < 12, 'freed ids are reused inside the pool');
   assert.deepEqual(auditRun(p), []);
 });
 

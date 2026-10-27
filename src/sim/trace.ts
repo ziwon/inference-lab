@@ -1,7 +1,6 @@
 import type { IntRange, TraceRequest, TraceSpec } from './config.ts';
 import { msToUs } from './units.ts';
 
-/** A request after normalization. `index` is its position in (arrival, input order), which is also FIFO order. */
 export interface TraceItem {
   index: number;
   id: string;
@@ -10,8 +9,7 @@ export interface TraceItem {
   outputTokens: number;
 }
 
-/** mulberry32: 32-bit integer state, identical output in every JavaScript engine. */
-export function createRng(seed: number) {
+export function mulberry32(seed: number) {
   let state = seed >>> 0;
   const next = () => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -26,10 +24,9 @@ export function createRng(seed: number) {
   };
 }
 
-/** Turns a trace spec into the explicit request list. Generated traces depend only on the spec and seed. */
 export function materializeTrace(spec: TraceSpec, seed: number): TraceRequest[] {
   if (spec.kind === 'explicit') return spec.requests.map(r => ({ ...r }));
-  const rng = createRng(seed);
+  const rng = mulberry32(seed);
   const step = spec.count > 1 ? spec.spanMs / (spec.count - 1) : 0;
   const arrivals = Array.from({ length: spec.count }, (_, i) => {
     const ms =

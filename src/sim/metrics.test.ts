@@ -4,11 +4,6 @@ import { distribution, summarize } from './metrics.ts';
 import { build, fixture, r } from './test-fixtures.ts';
 import { nearestRank } from './units.ts';
 
-/**
- * Hand trace with 1 ms iterations:
- * a (P=4, G=3) arrives at 0: prefill [0,1], decodes [1,2] and [2,3]. Tokens at 1, 2, 3 ms.
- * b (P=2, G=1) arrives at 0.5 ms, during iteration 0: prefill [1,2]. Token at 2 ms.
- */
 const cmp = build(fixture({ trace: [r('a', 0, 4, 3), r('b', 0.5, 2, 1)] }));
 const slo = cmp.config.slo;
 const run = cmp.panels.A;

@@ -7,11 +7,9 @@ export const GIB = 1024 ** 3;
 export const MIB = 1024 ** 2;
 export const KIB = 1024;
 
-/** Simulated time is an integer count of microseconds so boundaries compare exactly. */
 export const msToUs = (ms: number) => Math.round(ms * 1000);
 export const usToMs = (us: number) => us / 1000;
 
-/** Every nonempty iteration lasts at least 1 µs, the clock resolution. */
 export const durationUs = (ms: number) => Math.max(1, Math.round(ms * 1000));
 
 export const ceilDiv = (a: number, b: number) => Math.ceil(a / b);

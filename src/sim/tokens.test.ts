@@ -13,7 +13,7 @@ test('G = 1 completes after prefill with P KV positions and no decode', () => {
   const end = stateAfter(p, 'iterationCompleted', 0);
   assert.deepEqual(
     { phase: end.requests[0]!.phase, cached: end.requests[0]!.cachedTokens, generated: end.requests[0]!.generatedTokens },
-    { phase: 'finished', cached: 5, generated: 1 },
+    { phase: 'awaitingRelease', cached: 5, generated: 1 },
   );
   assert.equal(p.iterations.length, 1);
   assert.deepEqual(p.histories[0]!.decodeIterations, []);
@@ -25,7 +25,7 @@ test('a request reaches exactly P + G - 1 populated KV positions before release'
   const p = run({ trace: [r('a', 0, 4, 3)] });
   const last = p.iterations.length - 1;
   const s = stateAfter(p, 'iterationCompleted', last).requests[0]!;
-  assert.deepEqual({ cached: s.cachedTokens, generated: s.generatedTokens, phase: s.phase }, { cached: 6, generated: 3, phase: 'finished' });
+  assert.deepEqual({ cached: s.cachedTokens, generated: s.generatedTokens, phase: s.phase }, { cached: 6, generated: 3, phase: 'awaitingRelease' });
   assert.equal(stateAt(p, p.events.length).requests[0]!.phase, 'completed');
 });
 
@@ -40,7 +40,7 @@ test('each decode consumes the previous token: KV lags emitted tokens by one', (
 
 test('chunked prefill emits nothing before the final chunk and continues from the cached prefix', () => {
   const p = run({ trace: [r('a', 0, 10, 2)], scheduler: { maxPrefillChunkTokens: 4 } });
-  const prefills = p.histories[0]!.prefills.map(c => [c.cachedBefore, c.tokens, c.final]);
+  const prefills = p.histories[0]!.prefills.map(c => [c.cachedBefore, c.tokens, c.emitsFirstToken]);
   assert.deepEqual(prefills, [[0, 4, false], [4, 4, false], [8, 2, true]]);
   assert.equal(stateAfter(p, 'iterationCompleted', 1).requests[0]!.generatedTokens, 0);
   assert.equal(stateAfter(p, 'iterationCompleted', 2).requests[0]!.generatedTokens, 1);
