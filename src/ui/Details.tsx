@@ -149,10 +149,10 @@ function IterationDetails({ cmp, panel, iteration, state, onSelect }: { cmp: Com
       <CostTerms it={it} />
       <div className="row-between">
         <button type="button" className="btn" disabled={iteration === 0} onClick={() => onSelect({ kind: 'iteration', panel, iteration: iteration - 1 })}>
-          ← {iteration - 1}
+          {S.details.previousIteration(iteration - 1)}
         </button>
         <button type="button" className="btn" disabled={iteration + 1 >= run.iterations.length} onClick={() => onSelect({ kind: 'iteration', panel, iteration: iteration + 1 })}>
-          {iteration + 1} →
+          {S.details.nextIteration(iteration + 1)}
         </button>
       </div>
     </div>

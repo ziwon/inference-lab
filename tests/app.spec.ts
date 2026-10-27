@@ -49,6 +49,25 @@ test('selecting a request and an iteration explains them', async ({ page }) => {
   await expect(page.getByTestId('details')).toContainText('Iteration overhead');
 });
 
+test('iterations count from 1 on screen and event counts agree in number', async ({ page }) => {
+  await page.goto('/#scenario=long-prefill');
+  for (let i = 0; i < 3; i++) await page.getByTestId('next').click();
+  const log = page.getByTestId('event-log');
+  await expect(log.locator('li[aria-current="step"]')).toHaveText(/Iteration 1 started with 1 request$/);
+  await expect(page.getByTestId('batch-title-A')).toHaveText('Iteration 1, executing');
+  await expect(page.getByTestId('timeline-A').locator('svg.tl-strip')).toContainText('#1');
+  await page.getByTestId('batch-A').getByRole('button', { name: 'Explain this iteration' }).click();
+  const details = page.getByTestId('details');
+  await expect(details.getByRole('heading', { level: 2 })).toHaveText('Panel A, iteration 1');
+  await expect(details.getByRole('button', { name: /→$/ })).toHaveText('2 →');
+  await page.getByTestId('row-A-R1').click();
+  await expect(details.getByRole('button', { name: 'Panel A, iteration 1' })).toBeVisible();
+
+  for (let i = 0; i < 57; i++) await page.getByTestId('next').click();
+  await expect(log).toContainText(/started with [2-9] requests/);
+  await expect(log).not.toContainText(/with 1 requests|reserved 1 blocks|released 1 blocks/);
+});
+
 test('changing a control re-runs both panels and marks per-panel overrides', async ({ page }) => {
   await page.goto('/#scenario=kv-pressure');
   const before = await page.getByTestId('results-table').innerText();

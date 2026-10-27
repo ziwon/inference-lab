@@ -6,6 +6,9 @@ import type { EntryReason, SkipReason } from '../sim/scheduler.ts';
 import type { InfeasibleReason, Phase, RunOutcome } from '../sim/state.ts';
 
 type Params = Record<string, number | string> | undefined;
+
+const iterationNumber = (index: number) => index + 1;
+const count = (n: number, singular: string, plural = `${singular}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? singular : plural}`;
 type Catalog<U extends { code: string }> = { [C in U['code']]: (r: Extract<U, { code: C }>, id: (i: number) => string) => string };
 
 export const S = {
@@ -127,25 +130,25 @@ export const S = {
       infeasible: 'Infeasible',
     },
     rowLabel: (id: string, phase: string) => `${id}, ${phase}. Show details.`,
-    iterationLabel: (n: number) => `Iteration ${n}. Show why requests ran or waited.`,
+    current: (index: number) => `#${iterationNumber(index)}`,
     scrollHint: 'Rows scroll inside the timeline.',
   },
   batch: {
     heading: 'Batch',
     idle: 'Idle. No iteration has started yet.',
-    executing: (n: number) => `Iteration ${n}, executing`,
-    finished: (n: number) => `Iteration ${n}, finished`,
+    executing: (index: number) => `Iteration ${iterationNumber(index)}, executing`,
+    finished: (index: number) => `Iteration ${iterationNumber(index)}, finished`,
     tokens: 'Scheduled tokens',
     tokenBudget: (used: number, budget: number) => `${used} of ${budget} tokens`,
     sequences: (used: number, limit: number) => `${used} of ${limit} sequences`,
-    remaining: (n: number) => `${n} tokens left`,
+    remaining: (n: number) => `${count(n, 'token')} left`,
     duration: 'Duration',
     ran: 'Ran',
     notRun: 'Did not run',
     request: 'Request',
     work: 'Work',
     why: 'Why',
-    prefillWork: (tokens: number, from: number, emitsFirstToken: boolean) => `Prefill ${tokens} tokens from position ${from}${emitsFirstToken ? ', emits first token' : ''}`,
+    prefillWork: (tokens: number, from: number, emitsFirstToken: boolean) => `Prefill ${count(tokens, 'token')} from position ${from}${emitsFirstToken ? ', emits first token' : ''}`,
     decodeWork: (position: number) => `Decode: append KV position ${position}, emit next token`,
     newBlocks: (n: number) => (n === 0 ? 'no new block' : n === 1 ? '+1 block' : `+${n} blocks`),
     waitingWork: 'Waiting for admission',
@@ -201,8 +204,8 @@ export const S = {
     peak: 'Peak allocated',
     perToken: 'KV per token',
     perBlock: 'Block',
-    blockUnit: (n: number) => (n === 1 ? '1 block' : `${n.toLocaleString('en-US')} blocks`),
-    tokenUnit: (n: number) => (n === 1 ? '1 token' : `${n.toLocaleString('en-US')} tokens`),
+    blockUnit: (n: number) => count(n, 'block'),
+    tokenUnit: (n: number) => count(n, 'token'),
     headroomNote: 'Reserved headroom is an accounting guarantee for admitted requests, not extra allocated memory.',
     metadataMissing: 'No quantization metadata allowance is declared, so packed weight size understates real residency.',
     rowsHeading: 'Per request',
@@ -214,7 +217,9 @@ export const S = {
     heading: 'Details',
     hint: 'Select a request row or an iteration bar to see its details. Select an event to jump to it.',
     request: (id: string) => `Request ${id}`,
-    iteration: (panel: string, n: number) => `${panel}, iteration ${n}`,
+    iteration: (panel: string, index: number) => `${panel}, iteration ${iterationNumber(index)}`,
+    previousIteration: (index: number) => `← ${iterationNumber(index)}`,
+    nextIteration: (index: number) => `${iterationNumber(index)} →`,
     close: 'Clear selection',
     prompt: 'Prompt tokens (P)',
     output: 'Output budget (G)',
@@ -233,7 +238,7 @@ export const S = {
     maxItl: 'Largest gap between tokens',
     chunks: 'Prefill chunks',
     decodes: 'Decode iterations',
-    releasedNote: (peak: number, kv: number) => `Released. Held ${peak} blocks and ${kv} KV positions (P + G − 1) at the end.`,
+    releasedNote: (peak: number, kv: number) => `Released. Held ${count(peak, 'block')} and ${count(kv, 'KV position')} (P + G − 1) at the end.`,
     reason: 'Why',
     ran: 'Ran in this iteration',
     skipped: 'Active but not scheduled',
@@ -246,10 +251,10 @@ export const S = {
     describe: {
       arrived: (id: string) => `${id} arrived`,
       rejected: (id: string) => `${id} rejected as infeasible`,
-      admitted: (id: string, blocks: number) => `${id} admitted, reserved ${blocks} blocks`,
-      iterationStarted: (n: number, count: number) => `Iteration ${n} started with ${count} requests`,
-      iterationCompleted: (n: number) => `Iteration ${n} finished, tokens emitted`,
-      released: (id: string, blocks: number) => `${id} completed, released ${blocks} blocks`,
+      admitted: (id: string, blocks: number) => `${id} admitted, reserved ${count(blocks, 'block')}`,
+      iterationStarted: (index: number, requests: number) => `Iteration ${iterationNumber(index)} started with ${count(requests, 'request')}`,
+      iterationCompleted: (index: number) => `Iteration ${iterationNumber(index)} finished, tokens emitted`,
+      released: (id: string, blocks: number) => `${id} completed, released ${count(blocks, 'block')}`,
       runEnded: () => 'Run ended',
     },
     jump: 'Jump to this event',

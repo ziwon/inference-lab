@@ -190,7 +190,7 @@ These definitions resemble vLLM's production metrics `vllm:time_to_first_token_s
 ## Sharing and export
 
 - Share links carry the configuration and seed as versioned base64url JSON in the URL fragment, which never reaches a server. Links longer than 8,000 characters are refused with a suggestion to export instead.
-- Export writes the schema version, simulator version, model assumptions, configuration, seed, materialized trace, memory plan, every event, iteration records, and result summaries.
+- Export writes the schema version, simulator version, model assumptions, configuration, seed, materialized trace, memory plan, every event, iteration records, and result summaries. Iteration indices in the export count from 0. The page numbers iterations from 1.
 - Import accepts an export or a bare configuration. The text is parsed with `JSON.parse` and validated field by field. It is never evaluated or rendered as HTML, and labels containing markup are rejected. The engine rebuilds the run and reports whether the file's event history matches. Files over 20 MiB are refused.
 
 ## References

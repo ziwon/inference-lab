@@ -195,7 +195,7 @@ function IterationStrip({
       </text>
       {current !== null && (
         <text x={8} y={34} className="mono">
-          #{current}
+          {S.timeline.current(current)}
         </text>
       )}
       <text x={8} y={48}>

@@ -23,7 +23,7 @@ The preset is built so the long request gets an admission slot and its 386-block
 | Last event | 871 ms | 871 ms |
 | SLO attainment (TTFT ≤ 200 ms, TPOT ≤ 20 ms) | 8 of 8 | 7 of 8 |
 
-In A, iteration 24 runs the whole 6,144-token prompt together with the six decodes. It lasts 166 ms, so each short request waits 166 ms for one token, and `R8` waits behind it. In B the prompt runs as twelve chunks of 16 to 22 ms beside the decodes. The stall disappears, but every chunk pays the per-iteration overhead again and shares its iteration with decodes, so the long request's first token comes later and misses the TTFT threshold. ITL p99 is higher in B because more gaps are mid-sized, while A has one very large gap per request.
+In A, iteration 25 runs the whole 6,144-token prompt together with the six decodes. It lasts 166 ms, so each short request waits 166 ms for one token, and `R8` waits behind it. In B the prompt runs as twelve chunks of 16 to 22 ms beside the decodes. The stall disappears, but every chunk pays the per-iteration overhead again and shares its iteration with decodes, so the long request's first token comes later and misses the TTFT threshold. ITL p99 is higher in B because more gaps are mid-sized, while A has one very large gap per request.
 
 **Assumption that matters.** Costs add with no overlap, so a mixed iteration lasts as long as its prefill and decode work combined. Total work is the same in both panels, which is why both finish at 871 ms.
 
