@@ -75,10 +75,10 @@ The build output is a static site, so any static host can serve `dist/`. The rep
 To deploy from your machine:
 
 1. Log in to Cloudflare with `npx wrangler login`.
-2. If the Pages project does not exist yet, create it with `npx wrangler pages project create inference-viz --production-branch main`.
+2. If the Pages project does not exist yet, create it with `npx wrangler pages project create inference-lab --production-branch main`.
 3. Run `npm run deploy`.
 
-`npm run deploy` runs `npm run check` first. It then runs `wrangler pages deploy dist --project-name=inference-viz`. Wrangler prints the deployment URL when it finishes.
+`npm run deploy` runs `npm run check` first. It then runs `wrangler pages deploy dist --project-name=inference-lab`. Wrangler prints the deployment URL when it finishes.
 
 To deploy from a Git repository instead, connect the repository in the Cloudflare dashboard under **Workers & Pages**. Set the build command to `npm run build` and the build output directory to `dist`. Set the `NODE_VERSION` environment variable to `22.12.0` or later.
 

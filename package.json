@@ -1,5 +1,5 @@
 {
-  "name": "inference-viz",
+  "name": "inference-lab",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm test && vite build",
     "predeploy": "npm run check",
-    "deploy": "npx wrangler pages deploy dist --project-name=inference-viz"
+    "deploy": "npx wrangler pages deploy dist --project-name=inference-lab"
   },
   "dependencies": {
     "react": "^19.3.1",
