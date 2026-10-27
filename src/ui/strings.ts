@@ -94,8 +94,7 @@ export const S = {
   } satisfies Record<RequestStatus, string>,
   outcome: (o: RunOutcome) =>
     o.code === 'drained' ? 'All requests completed or were rejected.'
-    : o.code === 'truncated' ? `Stopped after ${o.maxIterations.toLocaleString('en-US')} iterations. Results are partial.`
-    : `Blocked: ${o.waiting} requests could not be admitted.`,
+    : `Stopped after ${o.maxIterations.toLocaleString('en-US')} iterations. Results are partial.`,
   playback: {
     reset: 'Reset',
     previous: 'Previous event',
@@ -170,7 +169,6 @@ export const S = {
   } satisfies Catalog<EntryReason>,
   skipReason: {
     tokenBudgetExhausted: () => 'The iteration token budget is used up.',
-    sequenceLimitReached: r => `All ${r.limit} sequence slots in this iteration are used.`,
     wholePromptDoesNotFit: r => `Its ${r.promptTokens}-token prompt does not fit the ${r.remainingTokens} tokens left, and Policy A never splits prompts.`,
     behindDeferredPrefill: (r, id) => `FIFO: waits behind ${id(r.head)}, whose prompt was deferred.`,
   } satisfies Catalog<SkipReason>,

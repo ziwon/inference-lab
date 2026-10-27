@@ -10,7 +10,6 @@ export type EntryReason =
 
 export type SkipReason =
   | { code: 'tokenBudgetExhausted'; rank?: number }
-  | { code: 'sequenceLimitReached'; limit: number }
   | { code: 'wholePromptDoesNotFit'; promptTokens: number; remainingTokens: number }
   | { code: 'behindDeferredPrefill'; head: number };
 
@@ -58,27 +57,16 @@ const prefillQueue = (input: PlanInput) =>
     return p === 'admitted' || p === 'prefilling';
   });
 
-class Budget {
+interface Budget {
   tokens: number;
-  seqs: number;
-  constructor(limits: SchedulerLimits) {
-    this.tokens = limits.maxBatchTokens;
-    this.seqs = limits.maxActiveSequences;
-  }
-  take(tokens: number) {
-    this.tokens -= tokens;
-    this.seqs -= 1;
-  }
 }
 
 function scheduleDecodes(input: PlanInput, budget: Budget, plan: Plan, code: 'decodeFirst' | 'decodeWithRemainingBudget') {
   decodeOrder(input).forEach((request, rank) => {
-    if (budget.seqs === 0) {
-      plan.skipped.push({ request, kind: 'decode', reason: { code: 'sequenceLimitReached', limit: input.limits.maxActiveSequences } });
-    } else if (budget.tokens === 0) {
+    if (budget.tokens === 0) {
       plan.skipped.push({ request, kind: 'decode', reason: { code: 'tokenBudgetExhausted', rank } });
     } else {
-      budget.take(1);
+      budget.tokens -= 1;
       plan.entries.push({ request, kind: 'decode', tokens: 1, cachedBefore: input.requests[request]!.cachedTokens, emitsFirstToken: false, reason: { code, rank } });
     }
   });
@@ -86,20 +74,17 @@ function scheduleDecodes(input: PlanInput, budget: Budget, plan: Plan, code: 'de
 
 function planWholePrefill(input: PlanInput): Plan {
   const plan: Plan = { entries: [], skipped: [] };
-  const budget = new Budget(input.limits);
+  const budget: Budget = { tokens: input.limits.maxBatchTokens };
   let head: number | null = null;
   for (const request of prefillQueue(input)) {
     const promptTokens = input.trace[request]!.promptTokens;
     if (head !== null) {
       plan.skipped.push({ request, kind: 'prefill', reason: { code: 'behindDeferredPrefill', head } });
-    } else if (budget.seqs === 0) {
-      head = request;
-      plan.skipped.push({ request, kind: 'prefill', reason: { code: 'sequenceLimitReached', limit: input.limits.maxActiveSequences } });
     } else if (promptTokens > budget.tokens) {
       head = request;
       plan.skipped.push({ request, kind: 'prefill', reason: { code: 'wholePromptDoesNotFit', promptTokens, remainingTokens: budget.tokens } });
     } else {
-      budget.take(promptTokens);
+      budget.tokens -= promptTokens;
       plan.entries.push({ request, kind: 'prefill', tokens: promptTokens, cachedBefore: 0, emitsFirstToken: true, reason: { code: 'wholePrompt' } });
     }
   }
@@ -109,22 +94,18 @@ function planWholePrefill(input: PlanInput): Plan {
 
 function planChunkedPrefill(input: PlanInput): Plan {
   const plan: Plan = { entries: [], skipped: [] };
-  const budget = new Budget(input.limits);
+  const budget: Budget = { tokens: input.limits.maxBatchTokens };
   scheduleDecodes(input, budget, plan, 'decodeFirst');
   for (const request of prefillQueue(input)) {
     const cachedBefore = input.requests[request]!.cachedTokens;
     const remainingPrompt = input.trace[request]!.promptTokens - cachedBefore;
-    if (budget.seqs === 0) {
-      plan.skipped.push({ request, kind: 'prefill', reason: { code: 'sequenceLimitReached', limit: input.limits.maxActiveSequences } });
-      continue;
-    }
     if (budget.tokens === 0) {
       plan.skipped.push({ request, kind: 'prefill', reason: { code: 'tokenBudgetExhausted' } });
       continue;
     }
     const tokens = Math.min(remainingPrompt, input.limits.maxPrefillChunkTokens, budget.tokens);
     const limitedBy = tokens === remainingPrompt ? 'promptEnd' : tokens === input.limits.maxPrefillChunkTokens ? 'chunkLimit' : 'tokenBudget';
-    budget.take(tokens);
+    budget.tokens -= tokens;
     plan.entries.push({ request, kind: 'prefill', tokens, cachedBefore, emitsFirstToken: tokens === remainingPrompt, reason: { code: 'prefillChunk', limitedBy } });
   }
   return plan;

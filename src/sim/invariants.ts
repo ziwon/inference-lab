@@ -34,6 +34,7 @@ export function auditState(run: PanelRun, s: Readonly<SimState>): string[] {
     }
   });
   if (allocated !== s.allocatedBlocks) out.push(`allocated total ${s.allocatedBlocks} != sum ${allocated}`);
+  if (s.peakAllocatedBlocks < s.allocatedBlocks) out.push(`peak ${s.peakAllocatedBlocks} < allocated ${s.allocatedBlocks}`);
   if (reserved !== s.reservedBlocks) out.push(`reserved total ${s.reservedBlocks} != sum ${reserved}`);
   if (active !== s.activeCount) out.push(`active ${s.activeCount} != live ${active}`);
   if (s.reservedBlocks > run.memory.totalBlocks) out.push(`reserved ${s.reservedBlocks} > pool ${run.memory.totalBlocks}`);

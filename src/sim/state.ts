@@ -14,7 +14,7 @@ export interface RequestState {
   lastServedIteration: number;
 }
 
-export type RunOutcome = { code: 'drained' } | { code: 'truncated'; maxIterations: number } | { code: 'stalled'; waiting: number };
+export type RunOutcome = { code: 'drained' } | { code: 'truncated'; maxIterations: number };
 
 export interface SimState {
   timeUs: number;
@@ -120,6 +120,7 @@ export function applyEvent(s: SimState, e: SimEvent, ctx: ReducerContext): void 
         r.lastServedIteration = e.iteration;
         s.allocatedBlocks += entry.newBlocks;
       }
+      s.peakAllocatedBlocks = Math.max(s.peakAllocatedBlocks, s.allocatedBlocks);
       return;
     }
     case 'iterationCompleted': {
@@ -136,7 +137,6 @@ export function applyEvent(s: SimState, e: SimEvent, ctx: ReducerContext): void 
           : r.generatedTokens === item.outputTokens ? 'awaitingRelease'
           : 'decoding';
       }
-      s.peakAllocatedBlocks = Math.max(s.peakAllocatedBlocks, s.allocatedBlocks);
       return;
     }
     case 'released': {

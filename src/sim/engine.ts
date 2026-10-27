@@ -130,7 +130,7 @@ export function simulatePanel(input: PanelInput): PanelRun {
         t = trace[nextArrival]!.arrivalUs;
         continue;
       }
-      outcome = waiting.length > admission.admit.length ? { code: 'stalled', waiting: waiting.length - admission.admit.length } : { code: 'drained' };
+      outcome = { code: 'drained' };
       break;
     }
     if (iterations.length >= MAX_ITERATIONS) {
@@ -139,10 +139,7 @@ export function simulatePanel(input: PanelInput): PanelRun {
     }
 
     const plan = POLICIES[input.policy]({ requests: state.requests, trace, activeInAdmissionOrder: active, limits });
-    if (plan.entries.length === 0) {
-      outcome = { code: 'stalled', waiting: waiting.length };
-      break;
-    }
+    if (plan.entries.length === 0) throw new Error(`iteration ${iterations.length} scheduled no work`);
     const entries = plan.entries.map((entry): IterationEntry => {
       const r = state.requests[entry.request]!;
       const newBlocks = blocksFor(entry.cachedBefore + entry.tokens, memory.blockSizeTokens) - r.allocatedBlocks;
