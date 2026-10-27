@@ -56,7 +56,7 @@ The site is static, so any static host works. For Cloudflare Pages with Git inte
 
 | Setting | Value |
 | --- | --- |
-| Project | `inference-viz` |
+| Project | `inference-lab` |
 | Build command | `npm run check` |
 | Output directory | `dist` |
 | Build environment | `NODE_VERSION=24` |
@@ -116,4 +116,4 @@ Mechanisms are grounded in these sources. The simulator's simplifications are it
 - vLLM documentation, [Automatic prefix caching](https://docs.vllm.ai/en/stable/features/automatic_prefix_caching/) (outside this release).
 - Kwon et al., [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180), SOSP 2023.
 
-The companion project [NCCL Lab](https://nccl-viz.pages.dev/) ([source](https://github.com/ziwon/nccl-viz)) uses the same playback and inspector conventions for collective communication.
+The companion project [NCCL Lab](https://nccl-lab.pages.dev/) ([source](https://github.com/ziwon/nccl-lab)) uses the same playback and inspector conventions for collective communication.

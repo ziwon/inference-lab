@@ -136,7 +136,7 @@ test('export then import round-trips the run', async ({ page }, testInfo) => {
   const file = testInfo.outputPath('run.json');
   await (await download).saveAs(file);
   const doc = JSON.parse(await readFile(file, 'utf8'));
-  expect(doc.schema).toBe('inference-viz.run');
+  expect(doc.schema).toBe('inference-lab.run');
   expect(doc.panels.A.events.length).toBeGreaterThan(0);
   await page.getByTestId('scenario-long-prefill').click();
   await page.getByTestId('import-file').setInputFiles(file);

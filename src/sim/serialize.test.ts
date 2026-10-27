@@ -47,7 +47,7 @@ test('exported events name the same request as the exported iterations when the 
 
 test('an export records versions, assumptions, configuration, seed, trace, events, and summaries', () => {
   const doc = exportRun(build(scenario('edge-cases').config));
-  assert.equal(doc.schema, 'inference-viz.run');
+  assert.equal(doc.schema, 'inference-lab.run');
   assert.equal(doc.schemaVersion, 1);
   assert.equal(typeof doc.simulatorVersion, 'string');
   assert.ok(doc.assumptions.kvBytesPerToken.includes('numKvHeads'));

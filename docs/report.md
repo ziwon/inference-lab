@@ -2,7 +2,7 @@
 
 [Back to Inference Lab](../README.md)
 
-This report covers release 1.0.0 of Inference Lab (`inference-viz`), built on the `feat/inference-lab` branch.
+This report covers release 1.0.0 of Inference Lab (`inference-lab`), built on the `feat/inference-lab` branch.
 
 ## Completed capabilities
 

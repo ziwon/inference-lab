@@ -1,6 +1,6 @@
 # Inference Lab visual system
 
-Direction: a quiet engineering instrument. The request timeline is the main visual material. Everything else explains the timeline at the playhead. The style follows the companion [NCCL Lab](https://nccl-viz.pages.dev/): neutral charcoal surfaces, compact controls, monospace only for counters and computed values.
+Direction: a quiet engineering instrument. The request timeline is the main visual material. Everything else explains the timeline at the playhead. The style follows the companion [NCCL Lab](https://nccl-lab.pages.dev/): neutral charcoal surfaces, compact controls, monospace only for counters and computed values.
 
 ## Tokens
 

@@ -3,7 +3,7 @@ import { type Issue, PANEL_IDS, type PanelId, SIMULATOR_VERSION, type SimConfig,
 import { summarize } from './metrics.ts';
 import { type Result, err, ok } from './units.ts';
 
-export const EXPORT_SCHEMA = 'inference-viz.run';
+export const EXPORT_SCHEMA = 'inference-lab.run';
 export const EXPORT_SCHEMA_VERSION = 1;
 export const MAX_SHARE_LENGTH = 8000;
 export const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
