@@ -33,6 +33,10 @@ export const S = {
     invalidConfig: 'This change makes the configuration invalid. The last valid run stays on screen.',
     dismiss: 'Dismiss',
   },
+  crash: {
+    message: 'The simulator hit an internal error while building or drawing this run, so it stopped. This is a bug in the simulator.',
+    reset: 'Open the default scenario',
+  },
   scenario: {
     heading: 'Scenario',
     custom: 'Custom configuration',

@@ -222,6 +222,23 @@ test('export then import round-trips the run', async ({ page }, testInfo) => {
   await expect(page.getByTestId('request-outcomes').locator('tbody tr')).toHaveCount(24);
 });
 
+test('an internal error while building a run shows a notice that resets to the default scenario', async ({ page }) => {
+  await page.route(/\/src\/sim\/compare\.ts(\?.*)?$/, async route => {
+    const response = await route.fetch();
+    const source = await response.text();
+    const signature = 'export function buildComparison(config) {';
+    expect(source).toContain(signature);
+    await route.fulfill({ response, body: source.replace(signature, `${signature} if (location.hash === '#scenario=burst') throw new Error('injected engine fault');`) });
+  });
+  await page.goto('/#scenario=burst');
+  const crash = page.getByTestId('crash');
+  await expect(crash).toContainText('internal error');
+  await crash.getByRole('button', { name: 'Open the default scenario' }).click();
+  await expect(crash).toHaveCount(0);
+  await expect(page.getByTestId('scenario-long-prefill')).toHaveAttribute('aria-pressed', 'true');
+  expect(new URL(page.url()).hash).toBe('#scenario=long-prefill');
+});
+
 test('the model assumptions dialog documents the equations', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('open-model').click();
