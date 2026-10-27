@@ -39,19 +39,62 @@ function syncHash(config: SimConfig) {
   history.replaceState(null, '', `${location.pathname}${location.search}${encoded.ok ? `#c=${encoded.value}` : ''}`);
 }
 
-function loadFromHash(hash: string): Loaded {
+type LinkSource =
+  | { kind: 'none' }
+  | { kind: 'scenario'; id: ScenarioId }
+  | { kind: 'shared'; encoded: string }
+  | { kind: 'earlierVersion' };
+
+interface LinkLoad extends Loaded {
+  address: string | null;
+}
+
+const isScenarioId = (s: string | null): s is ScenarioId => s !== null && (SCENARIO_IDS as readonly string[]).includes(s);
+
+function fragmentSource(hash: string): LinkSource {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
   const preset = params.get('scenario');
-  if (preset && (SCENARIO_IDS as readonly string[]).includes(preset)) return fromScenario(preset as ScenarioId);
+  if (isScenarioId(preset)) return { kind: 'scenario', id: preset };
   const encoded = params.get('c');
-  if (!encoded) return fromScenario(DEFAULT_SCENARIO);
-  const decoded = decodeShare(encoded);
-  const built = decoded.ok ? buildComparison(decoded.value) : decoded;
-  if (!decoded.ok || !built.ok) {
-    const issues = !decoded.ok ? decoded.error : !built.ok ? built.error : [];
-    return fromScenario(DEFAULT_SCENARIO, { tone: 'error', text: S.app.shareInvalid, details: issues.slice(0, 6).map(issueText) });
+  return encoded ? { kind: 'shared', encoded } : { kind: 'none' };
+}
+
+function querySource(search: string): LinkSource {
+  const params = new URLSearchParams(search);
+  const preset = params.get('scenario');
+  if (params.has('cfg') || (preset !== null && !isScenarioId(preset))) return { kind: 'earlierVersion' };
+  return isScenarioId(preset) ? { kind: 'scenario', id: preset } : { kind: 'none' };
+}
+
+function fromSource(source: LinkSource): { loaded: Loaded; hash: string | null } {
+  switch (source.kind) {
+    case 'none':
+      return { loaded: fromScenario(DEFAULT_SCENARIO), hash: null };
+    case 'scenario':
+      return { loaded: fromScenario(source.id), hash: `#scenario=${source.id}` };
+    case 'earlierVersion':
+      return { loaded: fromScenario(DEFAULT_SCENARIO, { tone: 'info', text: S.app.earlierVersionLink }), hash: `#scenario=${DEFAULT_SCENARIO}` };
+    case 'shared': {
+      const decoded = decodeShare(source.encoded);
+      const built = decoded.ok ? buildComparison(decoded.value) : decoded;
+      if (!built.ok) {
+        return { loaded: fromScenario(DEFAULT_SCENARIO, { tone: 'error', text: S.app.shareInvalid, details: built.error.slice(0, 6).map(issueText) }), hash: null };
+      }
+      return { loaded: { config: built.value.config, cmp: built.value, scenarioId: null, speed: 100, notice: null }, hash: `#c=${source.encoded}` };
+    }
   }
-  return { config: decoded.value, cmp: built.value, scenarioId: null, speed: 100, notice: null };
+}
+
+function loadLink(search: string, hash: string): LinkLoad {
+  const fragment = fragmentSource(hash);
+  const query = querySource(search);
+  const { loaded, hash: canonical } = fromSource(fragment.kind === 'none' ? query : fragment);
+  const next = `${query.kind === 'none' ? search : ''}${canonical ?? hash}`;
+  return { ...loaded, address: next === `${search}${hash}` ? null : next };
+}
+
+function showAddress(loaded: LinkLoad) {
+  if (loaded.address !== null) history.replaceState(null, '', `${location.pathname}${loaded.address}`);
 }
 
 function windowRange(cmp: Comparison, t: number, windowMs: number | null): TimeRange {
@@ -79,7 +122,8 @@ function useNarrow() {
 }
 
 export function App() {
-  const initial = useMemo(() => loadFromHash(location.hash), []);
+  const initial = useMemo(() => loadLink(location.search, location.hash), []);
+  useEffect(() => showAddress(initial), [initial]);
   const [draft, setDraft] = useState(initial.config);
   const [cmp, setCmp] = useState(initial.cmp);
   const [scenarioId, setScenarioId] = useState(initial.scenarioId);
@@ -133,7 +177,8 @@ export function App() {
 
   useEffect(() => {
     const onHashChange = () => {
-      const loaded = loadFromHash(location.hash);
+      const loaded = loadLink(location.search, location.hash);
+      showAddress(loaded);
       setPlaying(false);
       setSpeed(loaded.speed);
       adopt(loaded.cmp, { scenarioId: loaded.scenarioId, reset: true });

@@ -129,6 +129,33 @@ test('a broken share link falls back to the default scenario with a notice', asy
   await expect(page.getByTestId('scenario-long-prefill')).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('a scenario link from the earlier app opens that preset and moves to the fragment form', async ({ page }) => {
+  await page.goto('/?scenario=burst');
+  await expect(page.getByTestId('scenario-burst')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('request-outcomes').locator('tbody tr')).toHaveCount(24);
+  await expect(page.getByTestId('notice')).toHaveCount(0);
+  expect(new URL(page.url()).search).toBe('');
+  expect(new URL(page.url()).hash).toBe('#scenario=burst');
+});
+
+test('a configuration link from the earlier app falls back to the default scenario and says why', async ({ page }) => {
+  for (const query of ['?v=1&cfg=eyJ2ZXJzaW9uIjoxfQ', '?scenario=not-a-scenario']) {
+    await page.goto(`/${query}`);
+    await expect(page.getByTestId('notice')).toContainText('earlier version of Inference Lab');
+    await expect(page.getByTestId('scenario-long-prefill')).toHaveAttribute('aria-pressed', 'true');
+    expect(new URL(page.url()).search).toBe('');
+    expect(new URL(page.url()).hash).toBe('#scenario=long-prefill');
+  }
+});
+
+test('a fragment link wins over an earlier-app query in the same address', async ({ page }) => {
+  await page.goto('/?v=1&cfg=eyJ2ZXJzaW9uIjoxfQ#scenario=kv-pressure');
+  await expect(page.getByTestId('scenario-kv-pressure')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('notice')).toHaveCount(0);
+  expect(new URL(page.url()).search).toBe('');
+  expect(new URL(page.url()).hash).toBe('#scenario=kv-pressure');
+});
+
 test('export then import round-trips the run', async ({ page }, testInfo) => {
   await page.goto('/#scenario=burst');
   const download = page.waitForEvent('download');

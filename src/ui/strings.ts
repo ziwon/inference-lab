@@ -26,6 +26,7 @@ export const S = {
       : 'Imported the configuration.',
     importFailed: 'Import failed.',
     shareInvalid: 'The share link could not be used, so the default scenario is shown.',
+    earlierVersionLink: 'This link came from an earlier version of Inference Lab, which stored settings in a form this version cannot read, so the default scenario is shown.',
     invalidConfig: 'This change makes the configuration invalid. The last valid run stays on screen.',
     dismiss: 'Dismiss',
   },
