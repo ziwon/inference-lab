@@ -2,6 +2,7 @@ import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import type { Comparison, Playhead } from '../sim/compare.ts';
 import type { PanelId, SchedulerLimits } from '../sim/config.ts';
 import type { PanelRun, RequestHistory } from '../sim/engine.ts';
+import { usedBy } from '../sim/scheduler.ts';
 import type { RequestState, SimState } from '../sim/state.ts';
 import { S } from './strings.ts';
 
@@ -47,10 +48,10 @@ function niceStep(spanUs: number, maxTicks: number) {
 }
 
 export function overrideText(cmp: Comparison, panel: PanelId): string[] {
-  const o = cmp.config.panels[panel].overrides;
+  const { policy, overrides: o } = cmp.config.panels[panel];
   const labels: Record<keyof SchedulerLimits, string> = { maxActiveSequences: S.config.maxActive, maxBatchTokens: S.config.maxBatch, maxPrefillChunkTokens: S.config.maxChunk };
   return (Object.keys(o) as (keyof SchedulerLimits)[])
-    .filter(k => o[k] !== undefined && o[k] !== cmp.config.scheduler[k])
+    .filter(k => usedBy(policy, k) && o[k] !== undefined && o[k] !== cmp.config.scheduler[k])
     .map(k => `${labels[k]} ${o[k]} (shared ${cmp.config.scheduler[k]})`);
 }
 

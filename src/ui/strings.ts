@@ -39,7 +39,7 @@ export const S = {
   scenarios: {
     'long-prefill': {
       name: 'Long prefill interruption',
-      summary: 'Six short requests are decoding when a 6,144-token prompt arrives. A third short request arrives behind it.',
+      summary: 'Six short requests are decoding when a 6,144-token prompt arrives. One more short request, R8, arrives behind it.',
       observe:
         'Policy A runs the whole long prompt in one 166 ms iteration, so every short request waits that long for its next token. Policy B splits it into 512-token chunks beside the decodes. The long request’s first token arrives later in B, and the request behind it starts sooner.',
       assumption: 'Costs add up with no overlap, so a mixed iteration lasts as long as its prefill and decode work combined.',

@@ -34,6 +34,11 @@ function fromScenario(id: ScenarioId, notice: Notice | null = null): Loaded {
   return { config: s.config, cmp: mustBuild(s.config), scenarioId: id, speed: s.playbackMsPerSec, notice };
 }
 
+function syncHash(config: SimConfig) {
+  const encoded = encodeShare(config);
+  history.replaceState(null, '', `${location.pathname}${location.search}${encoded.ok ? `#c=${encoded.value}` : ''}`);
+}
+
 function loadFromHash(hash: string): Loaded {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
   const preset = params.get('scenario');
@@ -92,6 +97,8 @@ export function App() {
 
   const atRef = useRef(at);
   atRef.current = at;
+  const cmpRef = useRef(cmp);
+  cmpRef.current = cmp;
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
@@ -101,10 +108,11 @@ export function App() {
     setIssues([]);
     setScenarioId(opts.scenarioId);
     setAt(opts.reset ? startPlayhead(next) : seekTime(next, atRef.current.timeUs));
+    const previousTrace = cmpRef.current.trace;
     setSelection(s => {
-      if (s?.kind === 'request' && s.request >= next.trace.length) return null;
-      if (s?.kind === 'iteration' && s.iteration >= next.panels[s.panel].iterations.length) return null;
-      return opts.reset ? null : s;
+      if (opts.reset || s?.kind !== 'request') return null;
+      const request = next.trace.findIndex(t => t.id === previousTrace[s.request]?.id);
+      return request < 0 ? null : { kind: 'request', request };
     });
   }, []);
 
@@ -118,9 +126,22 @@ export function App() {
         return;
       }
       adopt(built.value, { scenarioId: null, reset: false });
+      syncHash(built.value.config);
     },
     [adopt],
   );
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const loaded = loadFromHash(location.hash);
+      setPlaying(false);
+      setSpeed(loaded.speed);
+      adopt(loaded.cmp, { scenarioId: loaded.scenarioId, reset: true });
+      setNotice(loaded.notice);
+    };
+    addEventListener('hashchange', onHashChange);
+    return () => removeEventListener('hashchange', onHashChange);
+  }, [adopt]);
 
   const pickScenario = useCallback(
     (id: ScenarioId) => {
@@ -233,6 +254,7 @@ export function App() {
     }
     setPlaying(false);
     adopt(result.value.comparison, { scenarioId: null, reset: true });
+    syncHash(result.value.comparison.config);
     setNotice({ tone: 'info', text: S.app.importOk(result.value.history) });
   };
 

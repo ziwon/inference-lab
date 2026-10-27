@@ -13,6 +13,7 @@ import {
   WEIGHT_BITS,
 } from '../sim/config.ts';
 import { SCENARIO_IDS, type ScenarioId } from '../sim/scenarios.ts';
+import { usedBy } from '../sim/scheduler.ts';
 import { GIB } from '../sim/units.ts';
 import { NumberField, SelectField } from './NumberField.tsx';
 import { S } from './strings.ts';
@@ -168,7 +169,7 @@ function PanelFields({ panel, config, onChange }: { panel: PanelId; config: SimC
         options={POLICY_IDS.map(p => ({ value: p, label: S.policy[p].name }))}
         onChange={policy => setSpec({ ...spec, policy })}
       />
-      {LIMIT_FIELDS.map(f => {
+      {LIMIT_FIELDS.filter(f => usedBy(spec.policy, f.key)).map(f => {
         const v = spec.overrides[f.key];
         return (
           <NumberField

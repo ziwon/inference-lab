@@ -100,6 +100,29 @@ test('a share link restores the configuration and seed', async ({ page, context 
   expect(await fresh.getByTestId('results-table').innerText()).toBe(await page.getByTestId('results-table').innerText());
 });
 
+test('edits survive a reload, and a link pasted into an open tab loads it', async ({ page }) => {
+  await page.goto('/#scenario=kv-pressure');
+  const seed = page.getByTestId('seed');
+  await seed.fill('77');
+  await seed.press('Enter');
+  await expect(page).toHaveURL(/#c=/);
+  await page.reload();
+  await expect(page.getByTestId('seed')).toHaveValue('77');
+
+  await page.evaluate(() => {
+    location.hash = 'scenario=burst';
+  });
+  await expect(page.getByTestId('scenario-burst')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('request-outcomes').locator('tbody tr')).toHaveCount(24);
+});
+
+test('a whole-prefill panel offers no prefill-chunk override, since its policy never splits a prompt', async ({ page }) => {
+  await page.goto('/#scenario=long-prefill');
+  await expect(page.getByTestId('override-A-maxBatchTokens')).toBeAttached();
+  await expect(page.getByTestId('override-A-maxPrefillChunkTokens')).toHaveCount(0);
+  await expect(page.getByTestId('override-B-maxPrefillChunkTokens')).toBeAttached();
+});
+
 test('a broken share link falls back to the default scenario with a notice', async ({ page }) => {
   await page.goto('/#c=not-a-config');
   await expect(page.getByTestId('notice')).toContainText('could not be used');

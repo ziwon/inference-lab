@@ -111,6 +111,8 @@ function planChunkedPrefill(input: PlanInput): Plan {
   return plan;
 }
 
+export const usedBy = (policy: PolicyId, limit: keyof SchedulerLimits) => !(policy === 'whole-prefill' && limit === 'maxPrefillChunkTokens');
+
 export const POLICIES: Record<PolicyId, (input: PlanInput) => Plan> = {
   'whole-prefill': planWholePrefill,
   'chunked-prefill': planChunkedPrefill,
