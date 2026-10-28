@@ -1,8 +1,7 @@
 import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Comparison, Playhead } from '../sim/compare.ts';
-import type { PanelId, SchedulerLimits } from '../sim/config.ts';
+import type { PanelId } from '../sim/config.ts';
 import type { PanelRun, RequestHistory } from '../sim/engine.ts';
-import { usedBy } from '../sim/scheduler.ts';
 import type { RequestState, SimState } from '../sim/state.ts';
 import { S } from './strings.ts';
 
@@ -47,30 +46,17 @@ function niceStep(spanUs: number, maxTicks: number) {
   return ([1, 2, 5, 10].find(m => m * pow >= raw) ?? 10) * pow;
 }
 
-export function overrideText(cmp: Comparison, panel: PanelId): string[] {
-  const { policy, overrides: o } = cmp.config.panels[panel];
-  const labels: Record<keyof SchedulerLimits, string> = { maxActiveSequences: S.config.maxActive, maxBatchTokens: S.config.maxBatch, maxPrefillChunkTokens: S.config.maxChunk };
-  return (Object.keys(o) as (keyof SchedulerLimits)[])
-    .filter(k => usedBy(policy, k) && o[k] !== undefined && o[k] !== cmp.config.scheduler[k])
-    .map(k => `${labels[k]} ${o[k]} (shared ${cmp.config.scheduler[k]})`);
-}
-
 export function PanelHeading({ cmp, panel, children }: { cmp: Comparison; panel: PanelId; children?: ReactNode }) {
-  const run = cmp.panels[panel];
-  const overrides = overrideText(cmp, panel);
   return (
     <div className="card-head">
-      <span className={`panel-tag ${panel.toLowerCase()}`}>{panel}</span>
-      <span className="policy-name">{S.policy[run.policy].name}</span>
-      {overrides.map(t => (
-        <span key={t} className="override" data-testid={`override-note-${panel}`}>
-          {t}
-        </span>
-      ))}
+      <PanelTag panel={panel} />
+      <span className="policy-name">{S.policy[cmp.panels[panel].policy].name}</span>
       {children}
     </div>
   );
 }
+
+export const PanelTag = ({ panel }: { panel: PanelId }) => <span className={`panel-tag ${panel.toLowerCase()}`}>{panel}</span>;
 
 interface MarkLayer {
   state: Readonly<SimState>;

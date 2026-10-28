@@ -37,7 +37,7 @@ Desktop, 1200 px and wider:
 2. Playback bar, across both columns and pinned to the top of the viewport while the page scrolls: reset, previous event, play or pause, next event, the scrubber, the modeled time with the event counter, speed, and time window. One scrubber step is 1/200 of the run, and the scrubber announces its value as modeled time, such as "37.4 ms of 871 ms (modeled)".
 3. Left column: scenario picker with the scenario's explanation (what to observe, the assumption that matters, what it does not establish), then the compact configuration groups.
 4. Main column, top to bottom:
-   - Panel headers for A and B with the policy name and any setting that differs from the shared base.
+   - What differs between panels: each panel's policy, then every scheduler limit that a panel sets away from the shared value, with both panel values and the shared value. A limit that a panel's policy ignores is struck through for that panel and marked "not used by panel A". The strip ends with what both panels share. It is the one place that lists differences, so panel headers carry only the panel letter and policy name.
    - Request timelines for A and B on one shared time axis with one playhead. Each timeline has an iteration strip above its request rows. The strip draws every iteration as a bar whose width is its modeled duration. Each timeline scrolls inside its own container.
    - Batch and memory inspectors, A beside B.
    - Details inspector for the selected request, iteration, or event, beside the event log.

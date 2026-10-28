@@ -6,6 +6,7 @@ import { DEFAULT_SCENARIO, SCENARIO_IDS, type ScenarioId, scenario } from '../si
 import { MAX_IMPORT_BYTES, decodeShare, encodeShare, exportRun, importText } from '../sim/serialize.ts';
 import { ConfigPanel, ScenarioPanel } from './ConfigPanel.tsx';
 import { DetailsPanel, EventLog, type Selection } from './Details.tsx';
+import { Differences } from './Differences.tsx';
 import { BatchInspector, MemoryInspector } from './Inspectors.tsx';
 import { ModelDialog } from './ModelDialog.tsx';
 import { PlaybackBar, speedOptions } from './PlaybackBar.tsx';
@@ -417,6 +418,7 @@ export function App() {
           <ConfigPanel config={draft} onChange={editConfig} compact={narrow} />
         </aside>
         <main className="main">
+          <Differences config={cmp.config} />
           {PANEL_IDS.map(panel => (
             <Timeline
               key={panel}

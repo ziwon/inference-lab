@@ -1,4 +1,4 @@
-import type { IssueCode, PolicyId } from '../sim/config.ts';
+import type { IssueCode, PolicyId, SchedulerLimits } from '../sim/config.ts';
 import type { WaitReason } from '../sim/inspect.ts';
 import type { RequestStatus } from '../sim/metrics.ts';
 import type { ScenarioId } from '../sim/scenarios.ts';
@@ -318,9 +318,11 @@ export const S = {
     kvElements: { 1: 'FP8, 1 byte', 2: 'FP16 or BF16, 2 bytes', 4: 'FP32, 4 bytes' } as Record<number, string>,
     blockSize: 'Block size (tokens)',
     scheduler: 'Scheduler (shared)',
-    maxActive: 'Max active sequences',
-    maxBatch: 'Iteration token budget',
-    maxChunk: 'Max prefill chunk (tokens)',
+    limits: {
+      maxActiveSequences: 'Max active sequences',
+      maxBatchTokens: 'Iteration token budget',
+      maxPrefillChunkTokens: 'Max prefill chunk (tokens)',
+    } satisfies Record<keyof SchedulerLimits, string>,
     panels: 'Panels',
     policy: 'Policy',
     override: 'Override',
@@ -359,6 +361,14 @@ export const S = {
     heading: 'Model assumptions',
   },
   dialog: { close: 'Close' },
+  differences: {
+    heading: 'What differs between panels',
+    policy: 'Policy',
+    shared: (value: string) => `shared ${value}`,
+    unusedBy: (panel: string) => `not used by panel ${panel}`,
+    alsoShared: (limitsDiffer: number, limitCount: number) =>
+      `Shared: trace, seed, architecture, memory, cost model, SLOs${limitsDiffer === 0 ? ', scheduler limits' : limitsDiffer < limitCount ? ', other scheduler limits' : ''}.`,
+  },
   shortcuts: {
     heading: 'Keyboard shortcuts',
     commands: {

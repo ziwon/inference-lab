@@ -59,9 +59,9 @@ interface Props {
 }
 
 const LIMIT_FIELDS: { key: keyof SchedulerLimits; label: string; max: number }[] = [
-  { key: 'maxActiveSequences', label: S.config.maxActive, max: 1024 },
-  { key: 'maxBatchTokens', label: S.config.maxBatch, max: 262_144 },
-  { key: 'maxPrefillChunkTokens', label: S.config.maxChunk, max: 262_144 },
+  { key: 'maxActiveSequences', label: S.config.limits.maxActiveSequences, max: 1024 },
+  { key: 'maxBatchTokens', label: S.config.limits.maxBatchTokens, max: 262_144 },
+  { key: 'maxPrefillChunkTokens', label: S.config.limits.maxPrefillChunkTokens, max: 262_144 },
 ];
 
 export function ConfigPanel({ config, onChange, compact }: Props) {

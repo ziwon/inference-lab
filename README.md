@@ -21,7 +21,7 @@ It is an educational model, not a hardware benchmark. Every number comes from th
 - A request lifecycle with arrival, FIFO admission, prefill chunks, decode iterations, per-token emission times, completion, and infeasible rejection.
 - A memory model with weights, a runtime allowance, and a paged KV pool. It shows actual block allocation, completion reservations, reserved headroom, logical cached tokens, and internal fragmentation per request.
 - Continuous batching: requests join and leave the running batch between iterations.
-- Two policies, a whole-prefill baseline and decode-first chunked prefill. Each panel can override the shared limits, and the UI marks every override.
+- Two policies, a whole-prefill baseline and decode-first chunked prefill. Each panel can override the shared limits. A strip above the timelines lists each panel's policy, every override with both panel values, and any limit a panel's policy ignores.
 - Event-derived metrics: initial queue delay, TTFT, ITL, TPOT, E2E latency, throughput, and SLO attainment with editable thresholds. Sample counts appear next to every percentile.
 - Four [scenarios](docs/scenarios.md): long prefill interruption, KV pressure, burst arrivals, and edge cases (a one-token output and a request that can never fit).
 - Synthetic architecture presets with explicit layer, query-head, KV-head, and head-dimension counts. They do not reproduce any commercial model or GPU.

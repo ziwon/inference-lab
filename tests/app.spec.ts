@@ -143,13 +143,18 @@ test('iterations count from 1 on screen and event counts agree in number', async
   await expect(log).not.toContainText(/with 1 requests|reserved 1 blocks|released 1 blocks/);
 });
 
-test('changing a control re-runs both panels and marks per-panel overrides', async ({ page }) => {
+test('changing a control re-runs both panels and lists the override in the differences strip', async ({ page }) => {
   await page.goto('/#scenario=kv-pressure');
+  const strip = page.getByTestId('differences');
+  await expect(strip.locator('li')).toHaveText(['Policy A Whole prefill B Chunked prefill']);
+  await expect(strip.locator('p')).toHaveText('Shared: trace, seed, architecture, memory, cost model, SLOs, scheduler limits.');
   const before = await page.getByTestId('results-table').innerText();
   const override = page.getByTestId('override-B-maxActiveSequences');
   await override.fill('4');
   await override.press('Enter');
-  await expect(page.getByTestId('override-note-B').first()).toContainText('Max active sequences 4 (shared 16)');
+  await expect(strip.locator('li')).toHaveText(['Policy A Whole prefill B Chunked prefill', 'Max active sequences A 16 B 4 shared 16']);
+  await expect(strip.locator('p')).toHaveText('Shared: trace, seed, architecture, memory, cost model, SLOs, other scheduler limits.');
+  await expect(page.getByTestId('timeline-B').locator('.card-head')).toHaveText(/^B\s*Decode-first chunked prefill\s*Request timeline$/);
   await expect(page.getByTestId('scenario-kv-pressure')).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(() => page.getByTestId('results-table').innerText()).not.toBe(before);
 
@@ -157,6 +162,25 @@ test('changing a control re-runs both panels and marks per-panel overrides', asy
   await promptMax.fill('9000');
   await promptMax.press('Enter');
   await expect(page.getByTestId('config-issues')).toContainText('exceeds the 8192-token context limit');
+});
+
+test('a prefill-chunk override with panel A on whole prefill is listed as not used by panel A', async ({ page }) => {
+  await page.goto('/#scenario=long-prefill');
+  const chunk = page.getByTestId('differences').getByTestId('difference-maxPrefillChunkTokens');
+  await expect(chunk).toHaveCount(0);
+  const onB = page.getByTestId('override-B-maxPrefillChunkTokens');
+  await onB.fill('256');
+  await onB.press('Enter');
+  await expect(chunk).toHaveText('Max prefill chunk (tokens) A 512 B 256 shared 512 not used by panel A');
+
+  await page.getByTestId('policy-A').selectOption('chunked-prefill');
+  const onA = page.getByTestId('override-A-maxPrefillChunkTokens');
+  await onA.fill('128');
+  await onA.press('Enter');
+  await expect(chunk).toHaveText('Max prefill chunk (tokens) A 128 B 256 shared 512');
+  await page.getByTestId('policy-A').selectOption('whole-prefill');
+  await expect(chunk).toHaveText('Max prefill chunk (tokens) A 128 B 256 shared 512 not used by panel A');
+  await expect(chunk.locator('s')).toHaveText('128');
 });
 
 test('configuration problems name the area in words, not the internal field path', async ({ page }) => {

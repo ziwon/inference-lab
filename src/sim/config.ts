@@ -256,6 +256,8 @@ const LIMIT_RANGES: Record<keyof SchedulerLimits, [number, number]> = {
   maxPrefillChunkTokens: [1, 262_144],
 };
 
+export const LIMIT_KEYS = Object.keys(LIMIT_RANGES) as (keyof SchedulerLimits)[];
+
 function readLimits(r: Reader, o: Obj, path: string, partial: boolean): Partial<SchedulerLimits> {
   const out: Partial<SchedulerLimits> = {};
   for (const key of Object.keys(LIMIT_RANGES) as (keyof SchedulerLimits)[]) {

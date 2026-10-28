@@ -1,7 +1,8 @@
-import { type Issue, PANEL_IDS, type PanelId, type SimConfig, type TraceRequest, resolveLimits } from './config.ts';
+import { type Issue, LIMIT_KEYS, PANEL_IDS, type PanelId, type SchedulerLimits, type SimConfig, type TraceRequest, resolveLimits } from './config.ts';
 import { zeroDurationWork } from './cost.ts';
 import { type PanelRun, simulatePanel } from './engine.ts';
 import { type MemoryPlan, completionReservation, planMemory } from './memory.ts';
+import { usedBy } from './scheduler.ts';
 import { type TraceItem, materializeTrace, normalizeTrace } from './trace.ts';
 import { type Result, err, ok } from './units.ts';
 
@@ -125,3 +126,19 @@ export function seekStep(cmp: Comparison, applied: number): Playhead {
 }
 
 export const panelApplied = (cmp: Comparison, at: Playhead, panel: PanelId) => cmp.steps.appliedAfterStep[panel][at.applied]!;
+
+export interface LimitDifference {
+  limit: keyof SchedulerLimits;
+  shared: number;
+  values: Record<PanelId, number>;
+  unusedBy: PanelId[];
+}
+
+export function limitDifferences(config: SimConfig): LimitDifference[] {
+  return LIMIT_KEYS.flatMap(limit => {
+    const shared = config.scheduler[limit];
+    const values = { A: resolveLimits(config, 'A')[limit], B: resolveLimits(config, 'B')[limit] };
+    if (PANEL_IDS.every(p => values[p] === shared)) return [];
+    return [{ limit, shared, values, unusedBy: PANEL_IDS.filter(p => !usedBy(config.panels[p].policy, limit)) }];
+  });
+}

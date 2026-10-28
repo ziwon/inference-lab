@@ -132,7 +132,18 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .panel-tag { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; background: var(--hover); font-weight: 700; font-size: 12px; }
 .panel-tag.b { background: #2e3540; }
 .policy-name { font-weight: 600; }
-.override { color: var(--state-waiting); font-size: 12px; }
+
+.differences { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s3); padding: var(--s2) var(--s3); border-style: dashed; font-size: 13px; }
+.differences h2 { font-size: 13px; }
+.differences ul { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); margin: 0; padding: 0; list-style: none; }
+.differences li { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px var(--s2); }
+.differences li.override { padding: 1px var(--s2); border: 1px solid var(--state-waiting); border-radius: var(--radius); }
+.differences .label { color: var(--text-2); }
+.differences .value { display: inline-flex; align-items: center; gap: var(--s1); font-weight: 600; }
+.differences .panel-tag { width: 18px; height: 18px; font-size: 11px; }
+.differences s { color: var(--muted); font-weight: 400; }
+.differences .note { color: var(--muted); font-size: 12px; }
+.differences > p { flex-basis: 100%; }
 
 .timeline-wrap { display: grid; gap: 0; }
 .tl-strip-wrap { position: relative; }
