@@ -113,6 +113,7 @@ export const S = {
     speed: 'Speed',
     speedOption: (msPerSec: number) => `${msPerSec} ms/s`,
     scrubber: 'Modeled time',
+    scrubberValue: (at: string, end: string) => `${at} of ${end} (modeled)`,
     time: 'Modeled time',
     event: (applied: number, total: number) => `Event ${applied} of ${total}`,
     window: 'Time window',

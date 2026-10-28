@@ -29,6 +29,33 @@ test('before Play, a request row previews the whole run faintly and has no playe
   await expect(played.locator('rect, path')).not.toHaveCount(0);
 });
 
+for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  test(`at ${viewport.width}x${viewport.height} Play is on screen on load and after scrolling to the memory inspector`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    const play = page.getByTestId('play');
+    const visible = () =>
+      play.evaluate(button => {
+        const r = button.getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= innerHeight && button.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+      });
+    expect(await visible()).toBe(true);
+    await page.getByTestId('memory-A').evaluate(e => e.scrollIntoView({ block: 'center' }));
+    expect(await page.evaluate(() => scrollY)).toBeGreaterThan(500);
+    expect(await visible()).toBe(true);
+  });
+}
+
+test('the scrubber steps by a visible share of the run and reads modeled milliseconds', async ({ page }) => {
+  await page.goto('/');
+  const scrubber = page.getByTestId('scrubber');
+  await expect(scrubber).toHaveAttribute('aria-valuetext', '0.00 ms of 871 ms (modeled)');
+  await scrubber.focus();
+  for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
+  expect(await clockMs(page)).toBeCloseTo(43.5, 0);
+  await expect(scrubber).toHaveAttribute('aria-valuetext', /^43\.\d ms of 871 ms \(modeled\)$/);
+});
+
 test('event stepping moves one event at a time and keyboard shortcuts skip inputs', async ({ page }) => {
   await page.goto('/');
   const counter = page.getByTestId('event-counter');
@@ -266,7 +293,8 @@ test.describe('narrow screens', () => {
 
   test('the page never scrolls horizontally and the segmented control picks a panel', async ({ page }) => {
     await page.goto('/');
-    await page.getByTestId('scrubber').fill('300000');
+    const scrubber = page.getByTestId('scrubber');
+    await scrubber.fill(String(69 * Number(await scrubber.getAttribute('step'))));
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBe(0);
     await expect(page.getByTestId('batch-A')).toBeVisible();

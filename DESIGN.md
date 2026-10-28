@@ -34,16 +34,16 @@ The legend repeats the shapes. Batch and memory inspectors reuse the same tokens
 Desktop, 1200 px and wider:
 
 1. Header: product name, the "Educational model, not a hardware benchmark" note, and the actions Model assumptions, Import, Export JSON, and Share link.
-2. Left column: scenario picker with the scenario's explanation (what to observe, the assumption that matters, what it does not establish), then the compact configuration groups.
-3. Main column, top to bottom:
-   - Playback bar: reset, previous event, play or pause, next event, speed, scrubber, the modeled time, and the event counter.
+2. Playback bar, across both columns and pinned to the top of the viewport while the page scrolls: reset, previous event, play or pause, next event, the scrubber, the modeled time with the event counter, speed, and time window. One scrubber step is 1/200 of the run, and the scrubber announces its value as modeled time, such as "37.4 ms of 871 ms (modeled)".
+3. Left column: scenario picker with the scenario's explanation (what to observe, the assumption that matters, what it does not establish), then the compact configuration groups.
+4. Main column, top to bottom:
    - Panel headers for A and B with the policy name and any setting that differs from the shared base.
    - Request timelines for A and B on one shared time axis with one playhead. Each timeline has an iteration strip above its request rows. The strip draws every iteration as a bar whose width is its modeled duration. Each timeline scrolls inside its own container.
    - Batch and memory inspectors, A beside B.
    - Details inspector for the selected request, iteration, or event, beside the event log.
    - Comparison results: aggregate metrics with sample counts, then request-level outcomes.
 
-Narrow screens, down to 390 px, stack the same sections in reading order. A segmented control picks panel A or B for the inspectors. The configuration groups collapse. The page itself never scrolls horizontally. Wide content such as timelines and tables scrolls inside its own container.
+Narrow screens, down to 390 px, stack the same sections in reading order. The playback bar comes right after the header in a compact three-row form, so Play is on screen on first load and stays pinned while the page scrolls. A segmented control picks panel A or B for the inspectors. The configuration groups collapse. The page itself never scrolls horizontally. Wide content such as timelines and tables scrolls inside its own container.
 
 ## Behavior
 

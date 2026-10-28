@@ -371,28 +371,31 @@ export function App() {
         </div>
       )}
 
+      <div className="playback-dock">
+        <PlaybackBar
+          cmp={cmp}
+          at={at}
+          playing={playing}
+          speed={speed}
+          windowMs={windowMs}
+          onToggle={toggle}
+          onStep={step}
+          onReset={reset}
+          onSeekTime={t => {
+            setPlaying(false);
+            setAt(seekTime(cmp, t));
+          }}
+          onSpeed={setSpeed}
+          onWindow={setWindowMs}
+        />
+      </div>
+
       <div className="layout">
         <aside className="sidebar">
           <ScenarioPanel active={scenarioId} onPick={pickScenario} />
           <ConfigPanel config={draft} onChange={editConfig} compact={narrow} />
         </aside>
         <main className="main">
-          <PlaybackBar
-            cmp={cmp}
-            at={at}
-            playing={playing}
-            speed={speed}
-            windowMs={windowMs}
-            onToggle={toggle}
-            onStep={step}
-            onReset={reset}
-            onSeekTime={t => {
-              setPlaying(false);
-              setAt(seekTime(cmp, t));
-            }}
-            onSpeed={setSpeed}
-            onWindow={setWindowMs}
-          />
           {PANEL_IDS.map(panel => (
             <Timeline
               key={panel}
