@@ -406,6 +406,21 @@ test('the model assumptions dialog documents the equations', async ({ page }) =>
   await expect(dialog).not.toBeVisible();
 });
 
+for (const width of [1440, 390]) {
+  test(`the title carries a decorative brand icon to its left at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('/');
+    const title = page.getByRole('heading', { level: 1, name: 'Inference Lab' });
+    const mark = page.locator('header .brand-mark');
+    await expect(mark).toBeVisible();
+    await expect(mark).toHaveAttribute('aria-hidden', 'true');
+    const [m, t] = [(await mark.boundingBox())!, (await title.boundingBox())!];
+    expect(m.x + m.width).toBeLessThanOrEqual(t.x);
+    expect(m.y).toBeLessThan(t.y + t.height);
+    expect(m.y + m.height).toBeGreaterThan(t.y);
+  });
+}
+
 test.describe('narrow screens', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 

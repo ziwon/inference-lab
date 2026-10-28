@@ -8,6 +8,12 @@ const PATHS = {
 
 export type HeaderIconName = keyof typeof PATHS;
 
+export const BrandMark = () => (
+  <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4v16h16M8 8h5M10 12h8M8 16h4" />
+  </svg>
+);
+
 export const HeaderIcon = ({ name }: { name: HeaderIconName }) => (
   <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
     <path d={PATHS[name]} />

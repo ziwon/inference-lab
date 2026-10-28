@@ -57,46 +57,24 @@ npm run screenshot     # regenerate docs/assets/inference-lab.png from a running
 
 ## Deploy to Cloudflare Pages
 
-The site is static, so any static host works. For Cloudflare Pages with Git integration:
+The site is static and deploys to [inference-lab.pages.dev](https://inference-lab.pages.dev). The [Check and deploy workflow](.github/workflows/check.yml) runs unit tests, type checks, a production build, and Chromium end-to-end tests. A successful push to `main` then uploads the tested `dist` directory to Cloudflare Pages. Pull requests run the same checks without deploying. You can also run the workflow manually on `main`.
 
 | Setting | Value |
 | --- | --- |
 | Project | `inference-lab` |
+| Production branch | `main` |
 | Build command | `npm run check` |
 | Output directory | `dist` |
-| Build environment | `NODE_VERSION=24` |
+| Node.js version | `24` |
+
+GitHub Actions requires the repository secret `CLOUDFLARE_API_TOKEN` (Cloudflare Pages Edit permission for the deployment account) and repository variable `CLOUDFLARE_ACCOUNT_ID`. Configure them under **Settings → Secrets and variables → Actions**. The app itself needs no environment variables, secrets, or backend. See Cloudflare's [CI upload guide](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/) for token setup.
 
 For a manual upload, authenticate Wrangler and deploy the build output. `npm run deploy` runs `npm run check` first, then uploads `dist` to the `inference-lab` project.
 
 ```sh
 npx wrangler login
-npm run deploy
+npm run deploy -- --branch=main
 ```
-
-Nothing in this repository deploys automatically, and the app needs no environment variables, secrets, or backend.
-
-## Source map
-
-| Path | Responsibility |
-| --- | --- |
-| `src/sim/config.ts` | Configuration types, presets, limits, and boundary validation of untrusted input |
-| `src/sim/trace.ts` | Seeded integer PRNG, synthetic trace generation, and normalization into FIFO order |
-| `src/sim/memory.ts` | KV bytes per token, the memory plan, completion reservations, and block ids |
-| `src/sim/cost.ts` | The additive iteration cost model and zero-duration checks |
-| `src/sim/scheduler.ts` | FIFO admission and the two policies, each decision returned with its reason code |
-| `src/sim/state.ts` | Request phases, events, and the reducer that is the only writer of simulation state |
-| `src/sim/engine.ts` | The run loop, iteration records, per-request histories, checkpoints, and `stateAt` |
-| `src/sim/compare.ts` | A/B build, semantic validation, and the merged, time-synchronized event cursor |
-| `src/sim/metrics.ts` | Per-request metrics, distributions, throughput, and SLO attainment |
-| `src/sim/inspect.ts` | Memory breakdown and wait explanations at any cursor |
-| `src/sim/series.ts` | Per-iteration samples of KV blocks, batch size, and queue length for the over-time charts |
-| `src/sim/serialize.ts` | Versioned share links and JSON export and import |
-| `src/sim/invariants.ts` | State audits used by tests |
-| `src/ui/` | React views, the string catalog (`strings.ts`), and styles |
-| `tests/` | Playwright checks |
-| `scripts/` | The README screenshot generator |
-
-The engine has no React, DOM, or npm imports, so `node --test` runs it directly. The visual system is described in [DESIGN.md](DESIGN.md).
 
 ## Adding a scheduling policy
 
@@ -123,6 +101,7 @@ The [model reference](docs/model.md) lists every rule and equation. The [impleme
 - [Model reference](docs/model.md): token conventions, allocator and reservation policy, scheduler behavior, equations, units, exclusions.
 - [Scenarios](docs/scenarios.md): what each preset shows and what it does not establish.
 - [Implementation report](docs/report.md): capabilities, verification, and limitations.
+- [Design notes](DESIGN.md): tokens, state encoding, layout, and interaction rules.
 
 ## References
 

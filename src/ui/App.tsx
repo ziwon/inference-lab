@@ -6,7 +6,7 @@ import { DEFAULT_SCENARIO, SCENARIO_IDS, type ScenarioId, scenario } from '../si
 import { MAX_IMPORT_BYTES, decodeShare, encodeShare, exportRun, importText } from '../sim/serialize.ts';
 import { ConfigPanel, ScenarioPanel } from './ConfigPanel.tsx';
 import { DetailsPanel, EventLog, type Selection } from './Details.tsx';
-import { HeaderIcon, type HeaderIconName } from './HeaderIcon.tsx';
+import { BrandMark, HeaderIcon, type HeaderIconName } from './HeaderIcon.tsx';
 import { Differences } from './Differences.tsx';
 import { BatchInspector, MemoryInspector } from './Inspectors.tsx';
 import { ModelDialog } from './ModelDialog.tsx';
@@ -352,6 +352,7 @@ export function App() {
     <>
       <header className="header">
         <div className="brand">
+          <BrandMark />
           <h1>{S.app.title}</h1>
           <span className="tag">{S.app.tagline}</span>
         </div>
