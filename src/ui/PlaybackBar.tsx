@@ -64,8 +64,8 @@ export function PlaybackBar({ cmp, at, playing, speed, windowMs, onToggle, onSte
           />
         </div>
         <div className="clock">
-          <div className="mono" data-testid="clock">
-            {formatMs(at.timeUs)} <span className="muted small">(modeled)</span>
+          <div className="mono clock-time" data-testid="clock">
+            <span className="clock-now">{S.playback.clock(formatMs(at.timeUs), formatMs(cmp.endUs))}</span> <span className="muted small">{S.playback.modeled}</span>
           </div>
           <div className="muted small mono" data-testid="event-counter">
             {S.playback.event(at.applied, total)}

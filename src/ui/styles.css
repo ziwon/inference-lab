@@ -126,7 +126,8 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .playback { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); padding: var(--s2) var(--s3); }
 .playback .transport, .playback .options { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
 .playback .scrub { flex: 1 1 260px; display: flex; align-items: center; gap: var(--s2); min-width: 200px; }
-.playback .clock { min-width: 120px; text-align: right; white-space: nowrap; }
+.playback .clock { min-width: 180px; text-align: right; white-space: nowrap; }
+.playback .clock-now { white-space: nowrap; }
 .playback label { display: inline-flex; align-items: center; gap: var(--s1); color: var(--text-2); font-size: 12px; }
 
 .panel-tag { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; background: var(--hover); font-weight: 700; font-size: 12px; }
@@ -256,7 +257,17 @@ kbd { display: inline-block; min-width: 24px; padding: 1px 6px; border: 1px soli
 
 @media (max-width: 760px) {
   .layout { padding: var(--s2); gap: var(--s3); }
-  .header { padding: var(--s2) var(--s3); }
+  .header {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'title actions' 'tag tag' 'note note';
+    align-items: center; gap: var(--s1) var(--s2); padding: var(--s2) var(--s3);
+  }
+  .brand { display: contents; }
+  .brand h1 { grid-area: title; }
+  .brand .tag { grid-area: tag; }
+  .disclaimer { grid-area: note; justify-self: start; }
+  .actions { grid-area: actions; flex-wrap: nowrap; gap: var(--s1); }
+  .header-action { width: 32px; padding: 0; justify-content: center; }
+  .header-action .btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .segmented { display: inline-flex; }
   .inspectors { grid-template-columns: minmax(0, 1fr); }
   .inspectors[data-show='A'] .inspector-col[data-panel='B'],
@@ -269,6 +280,7 @@ kbd { display: inline-block; min-width: 24px; padding: 1px 6px; border: 1px soli
   .playback .transport { grid-area: transport; column-gap: var(--s2); }
   .playback .scrub { grid-area: scrub; min-width: 0; }
   .playback .clock { grid-area: clock; min-width: 0; }
+  .playback .clock-time { font-size: 13px; white-space: normal; }
   .playback .options { grid-area: options; }
 }
 

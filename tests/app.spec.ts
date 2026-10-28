@@ -46,6 +46,13 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
   });
 }
 
+test('the clock shows the current and total modeled time', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('clock')).toHaveText('0.00 ms / 871 ms (modeled)');
+  await page.locator('body').press('End');
+  await expect(page.getByTestId('clock')).toHaveText('871 ms / 871 ms (modeled)');
+});
+
 test('the scrubber steps by a visible share of the run and reads modeled milliseconds', async ({ page }) => {
   await page.goto('/');
   const scrubber = page.getByTestId('scrubber');
@@ -401,6 +408,33 @@ test('the model assumptions dialog documents the equations', async ({ page }) =>
 
 test.describe('narrow screens', () => {
   test.use({ viewport: { width: 390, height: 844 } });
+
+  test('the header stays compact and every action stays reachable by pointer, keyboard, and name', async ({ page }) => {
+    await page.goto('/');
+    const header = page.locator('header');
+    expect((await header.boundingBox())!.height).toBeLessThanOrEqual(100);
+    const actions = ['Model assumptions', 'Keyboard shortcuts', 'Import', 'Export JSON', 'Share link'];
+    for (const name of actions) {
+      const button = header.getByRole('button', { name, exact: true });
+      await expect(button).toHaveAttribute('title', name);
+      expect(
+        await button.evaluate(b => {
+          const r = b.getBoundingClientRect();
+          return r.width >= 24 && r.right <= innerWidth && r.bottom <= innerHeight && b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        }),
+      ).toBe(true);
+    }
+    await page.keyboard.press('Tab');
+    const order: string[] = [];
+    for (let i = 0; i < actions.length; i++) {
+      order.push(await page.evaluate(() => document.activeElement?.getAttribute('title') ?? ''));
+      await page.keyboard.press('Tab');
+    }
+    expect(order).toEqual(actions);
+    await header.getByRole('button', { name: 'Model assumptions' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('model-dialog')).toBeVisible();
+  });
 
   test('the page never scrolls horizontally and the segmented control picks a panel', async ({ page }) => {
     await page.goto('/');

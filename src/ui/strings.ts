@@ -117,6 +117,8 @@ export const S = {
     scrubber: 'Modeled time',
     scrubberValue: (at: string, end: string) => `${at} of ${end} (modeled)`,
     time: 'Modeled time',
+    clock: (at: string, end: string) => `${at} / ${end}`,
+    modeled: '(modeled)',
     event: (applied: number, total: number) => `Event ${applied} of ${total}`,
     window: 'Time window',
     windowAll: 'Whole run',

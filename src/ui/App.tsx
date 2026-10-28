@@ -6,6 +6,7 @@ import { DEFAULT_SCENARIO, SCENARIO_IDS, type ScenarioId, scenario } from '../si
 import { MAX_IMPORT_BYTES, decodeShare, encodeShare, exportRun, importText } from '../sim/serialize.ts';
 import { ConfigPanel, ScenarioPanel } from './ConfigPanel.tsx';
 import { DetailsPanel, EventLog, type Selection } from './Details.tsx';
+import { HeaderIcon, type HeaderIconName } from './HeaderIcon.tsx';
 import { Differences } from './Differences.tsx';
 import { BatchInspector, MemoryInspector } from './Inspectors.tsx';
 import { ModelDialog } from './ModelDialog.tsx';
@@ -339,6 +340,14 @@ export function App() {
     setNotice({ tone: 'info', text: S.app.importOk(result.value.history) });
   };
 
+  const headerActions: { label: string; icon: HeaderIconName; testId: string; keys?: string; onClick: () => void }[] = [
+    { label: S.app.modelButton, icon: 'model', testId: 'open-model', onClick: () => dialogRef.current?.showModal() },
+    { label: S.app.shortcutsButton, icon: 'keyboard', testId: 'open-shortcuts', keys: '?', onClick: () => shortcutsRef.current?.showModal() },
+    { label: S.app.importButton, icon: 'import', testId: 'import', onClick: () => fileRef.current?.click() },
+    { label: S.app.exportButton, icon: 'export', testId: 'export', onClick: exportJson },
+    { label: S.app.shareButton, icon: 'share', testId: 'share', onClick: () => void share() },
+  ];
+
   return (
     <>
       <header className="header">
@@ -348,15 +357,12 @@ export function App() {
         </div>
         <span className="disclaimer">{S.app.disclaimer}</span>
         <div className="actions">
-          <button type="button" className="btn" onClick={() => dialogRef.current?.showModal()} data-testid="open-model">
-            {S.app.modelButton}
-          </button>
-          <button type="button" className="btn" aria-keyshortcuts="?" onClick={() => shortcutsRef.current?.showModal()} data-testid="open-shortcuts">
-            {S.app.shortcutsButton}
-          </button>
-          <button type="button" className="btn" onClick={() => fileRef.current?.click()} data-testid="import">
-            {S.app.importButton}
-          </button>
+          {headerActions.map(a => (
+            <button key={a.testId} type="button" className="btn header-action" title={a.label} aria-keyshortcuts={a.keys} onClick={a.onClick} data-testid={a.testId}>
+              <HeaderIcon name={a.icon} />
+              <span className="btn-label">{a.label}</span>
+            </button>
+          ))}
           <input
             ref={fileRef}
             type="file"
@@ -369,12 +375,6 @@ export function App() {
               if (file) void importFile(file);
             }}
           />
-          <button type="button" className="btn" onClick={exportJson} data-testid="export">
-            {S.app.exportButton}
-          </button>
-          <button type="button" className="btn" onClick={() => void share()} data-testid="share">
-            {S.app.shareButton}
-          </button>
         </div>
       </header>
 
