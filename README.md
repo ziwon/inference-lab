@@ -57,7 +57,9 @@ npm run screenshot     # regenerate docs/assets/inference-lab.png from a running
 
 ## Deploy to Cloudflare Pages
 
-The site is static and deploys to [inference-lab.pages.dev](https://inference-lab.pages.dev). The [Check and deploy workflow](.github/workflows/check.yml) runs unit tests, type checks, a production build, and Chromium end-to-end tests. A successful push to `main` then uploads the tested `dist` directory to Cloudflare Pages. Pull requests run the same checks without deploying. You can also run the workflow manually on `main`.
+The site is static and deploys to [inference-lab.pages.dev](https://inference-lab.pages.dev). The [Check and deploy workflow](.github/workflows/check.yml) runs unit tests, type checks, a production build, and Chromium end-to-end tests. After the checks pass on `main`, a dependent deploy job calls a Cloudflare Pages deploy hook. Cloudflare fetches `main`, runs `npm run check`, and publishes `dist` if its build succeeds. Pull requests run the same checks without deploying. You can also run the workflow manually on `main`.
+
+A successful deploy job confirms that Cloudflare accepted the build request. Check the Pages deployment status for the final build result. The hook builds the branch head when invoked, rather than uploading the artifact built by GitHub Actions.
 
 | Setting | Value |
 | --- | --- |
@@ -67,7 +69,9 @@ The site is static and deploys to [inference-lab.pages.dev](https://inference-la
 | Output directory | `dist` |
 | Node.js version | `24` |
 
-GitHub Actions requires the repository secret `CLOUDFLARE_API_TOKEN` (Cloudflare Pages Edit permission for the deployment account) and repository variable `CLOUDFLARE_ACCOUNT_ID`. Configure them under **Settings → Secrets and variables → Actions**. The app itself needs no environment variables, secrets, or backend. See Cloudflare's [CI upload guide](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/) for token setup.
+This workflow requires a Git-connected Pages project with access to `ziwon/inference-lab`. Create a deploy hook for `main` and save its URL in the repository's `CLOUDFLARE_DEPLOY_HOOK` Actions secret. Disable native automatic production branch deployments in Pages so builds start through the tested workflow. No Cloudflare API token is needed in GitHub Actions. Keep the hook URL secret; see Cloudflare's [deploy hook guide](https://developers.cloudflare.com/pages/configuration/deploy-hooks/).
+
+An existing Direct Upload project cannot be converted to Git integration. Set up a new Git-connected project before enabling this workflow; preserving an existing project name requires replacing that project. The app itself needs no environment variables, secrets, or backend.
 
 For a manual upload, authenticate Wrangler and deploy the build output. `npm run deploy` runs `npm run check` first, then uploads `dist` to the `inference-lab` project.
 
