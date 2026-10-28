@@ -15,7 +15,7 @@ type Catalog<U extends { code: string }> = { [C in U['code']]: (r: Extract<U, { 
 export const S = {
   app: {
     title: 'Inference Lab',
-    tagline: 'Requests, batching, and paged KV cache, one iteration at a time.',
+    tagline: 'Requests, batching, and paged KV cache, step by step.',
     disclaimer: 'Educational model, not a hardware benchmark',
     modelButton: 'Model assumptions',
     shortcutsButton: 'Keyboard shortcuts',

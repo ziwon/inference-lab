@@ -4,15 +4,18 @@ import { expect, test } from '@playwright/test';
 const clockMs = async (page: import('@playwright/test').Page) => Number((await page.getByTestId('clock').innerText()).split(' ')[0]);
 
 test('the default scenario plays, pauses, and reaches the long prefill', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
   await page.goto('/');
+  await page.clock.pauseAt(new Date('2026-01-01T01:00:00Z'));
   await expect(page.getByRole('heading', { name: 'Inference Lab' })).toBeVisible();
   await expect(page.getByTestId('scenario-long-prefill')).toHaveAttribute('aria-pressed', 'true');
   await page.getByTestId('speed').selectOption('1000');
   await page.getByTestId('play').click();
-  await expect.poll(() => clockMs(page), { timeout: 5000 }).toBeGreaterThan(200);
+  await page.clock.runFor(300);
+  expect(await clockMs(page)).toBeGreaterThan(200);
   await page.getByTestId('play').click();
   const paused = await clockMs(page);
-  await page.waitForTimeout(300);
+  await page.clock.runFor(300);
   expect(await clockMs(page)).toBe(paused);
   await expect(page.getByTestId('row-A-Long')).toBeVisible();
 });

@@ -27,6 +27,13 @@ jobs:
       - run: npm run check
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Upload browser test failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failures
+          path: test-results/
+          retention-days: 7
       - name: Deploy to Cloudflare Pages
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
