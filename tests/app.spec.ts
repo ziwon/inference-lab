@@ -221,6 +221,36 @@ test('A/B comparison shows aggregate and request-level outcomes for the same tra
   await expect(page.getByTestId('request-outcomes').locator('tbody tr')).toHaveCount(24);
 });
 
+test('results at the cursor follow playback and agree with the timelines, and Final shows the whole run', async ({ page }) => {
+  await page.goto('/');
+  const scrubber = page.getByTestId('scrubber');
+  await scrubber.fill(String(142 * Number(await scrubber.getAttribute('step'))));
+  const results = page.getByTestId('results');
+  const table = page.getByTestId('results-table');
+  const row = (label: string) => table.locator('tr', { has: page.locator('th', { hasText: new RegExp(`^${label}$`) }) }).locator('td');
+  const final = results.getByRole('button', { name: 'Final' });
+  const atCursor = results.getByRole('button', { name: 'At cursor' });
+  await expect(final).toHaveAttribute('aria-pressed', 'true');
+  await expect(row('Completed')).toHaveText(['8', '8', '0']);
+
+  await atCursor.click();
+  await expect(atCursor).toHaveAttribute('aria-pressed', 'true');
+  await expect(row('Completed')).toHaveText(['1', '0', '−1']);
+  for (const [i, panel] of ['A', 'B'].entries()) {
+    const line = await page.getByTestId(`timeline-${panel}`).locator('.outcome-line').innerText();
+    const [, waiting, completed] = line.match(/Waiting: (\d+) .* Completed: (\d+)/)!;
+    await expect(row('Completed').nth(i)).toHaveText(completed!);
+    await expect(row('Waiting').nth(i)).toHaveText(waiting!);
+  }
+  const long = page.getByTestId('request-outcomes').locator('tr', { hasText: 'Long' });
+  await expect(long.locator('td').nth(3)).toHaveText('Completed / Unfinished');
+  await expect(long.locator('td').nth(7)).toHaveText('N/A');
+
+  await page.locator('body').press('End');
+  await expect(row('Completed')).toHaveText(['8', '8', '0']);
+  await expect(atCursor).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('the edge-case preset marks the infeasible request and the one-token request', async ({ page }) => {
   await page.goto('/#scenario=edge-cases');
   const scrubber = page.getByTestId('scrubber');

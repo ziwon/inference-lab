@@ -41,7 +41,7 @@ Desktop, 1200 px and wider:
    - Request timelines for A and B on one shared time axis with one playhead. Each timeline has an iteration strip above its request rows. The strip draws every iteration as a bar whose width is its modeled duration. Each timeline scrolls inside its own container.
    - Batch and memory inspectors, A beside B.
    - Details inspector for the selected request, iteration, or event, beside the event log.
-   - Comparison results: aggregate metrics with sample counts, then request-level outcomes.
+   - Comparison results: aggregate metrics with sample counts, then request-level outcomes. A Final / At cursor switch picks the full run (the default, so the A/B outcome shows on first load) or the events up to the playhead, which updates as playback moves. Both modes keep the B − A column.
 
 Narrow screens, down to 390 px, stack the same sections in reading order. The playback bar comes right after the header in a compact three-row form, so Play is on screen on first load and stays pinned while the page scrolls. A segmented control picks panel A or B for the inspectors. The configuration groups collapse. The page itself never scrolls horizontally. Wide content such as timelines and tables scrolls inside its own container.
 

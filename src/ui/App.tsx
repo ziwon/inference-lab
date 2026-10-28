@@ -464,7 +464,7 @@ export function App() {
               }}
             />
           </div>
-          <Results cmp={cmp} selected={selection?.kind === 'request' ? selection.request : null} onSelectRequest={selectRequest} />
+          <Results cmp={cmp} states={states} atUs={at.timeUs} selected={selection?.kind === 'request' ? selection.request : null} onSelectRequest={selectRequest} />
           <p className="muted small" data-testid="totals">
             {S.playback.event(at.applied, total)}
           </p>

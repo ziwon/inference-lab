@@ -171,6 +171,8 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .segmented { display: none; gap: 0; border: 1px solid var(--control); border-radius: var(--radius); overflow: hidden; width: max-content; }
 .segmented button { min-height: 32px; padding: 0 var(--s4); border: 0; background: var(--inset); cursor: pointer; }
 .segmented button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.card-head .segmented { display: inline-flex; }
+.card-head .segmented button { min-height: 28px; padding: 0 var(--s3); }
 
 .meter { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: var(--inset); border: 1px solid var(--separator); }
 .meter > div { height: 100%; }

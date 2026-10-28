@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Comparison } from '../sim/compare.ts';
-import { PANEL_IDS } from '../sim/config.ts';
+import { PANEL_IDS, type PanelId } from '../sim/config.ts';
 import { type Distribution, type Summary, requestMetrics, summarize } from '../sim/metrics.ts';
+import type { SimState } from '../sim/state.ts';
 import { formatMs, formatPercent, formatRate } from './format.ts';
 import { S } from './strings.ts';
 
@@ -22,10 +23,13 @@ const ROWS: Row[] = [
   { label: R.infeasible, value: s => s.counts.infeasible, show: v => String(v), unit: 'count' },
   { label: R.unfinished, value: s => s.counts.active + s.counts.pending, show: v => String(v), better: 'lower', unit: 'count' },
   { label: R.waiting, value: s => s.counts.waiting, show: v => String(v), better: 'lower', unit: 'count' },
-  ms(s => s.queueDelay, 'p50', R.queueDelay),
+  ms(s => s.queueDelay, 'p50', R.queueDelayP50),
+  ms(s => s.queueDelay, 'p90', R.queueDelayP90),
   ms(s => s.ttft, 'p50', R.ttftP50),
   ms(s => s.ttft, 'p90', R.ttftP90),
   ms(s => s.tpot, 'p50', R.tpotP50),
+  ms(s => s.tpot, 'p90', R.tpotP90),
+  ms(s => s.itl, 'p50', R.itlP50),
   ms(s => s.itl, 'p99', R.itlP99),
   ms(s => s.itl, 'max', R.itlMax),
   ms(s => s.e2e, 'p50', R.e2eP50),
@@ -50,25 +54,46 @@ function delta(row: Row, a: Summary, b: Summary) {
   return { text, cls: better === null ? '' : better ? 'delta-good' : 'delta-bad' };
 }
 
-export function Results({ cmp, selected, onSelectRequest }: { cmp: Comparison; selected: number | null; onSelectRequest: (i: number) => void }) {
+type ResultsAsOf = keyof typeof S.results.modes;
+const AS_OF: readonly ResultsAsOf[] = ['final', 'cursor'];
+
+interface Props {
+  cmp: Comparison;
+  states: Record<PanelId, Readonly<SimState>>;
+  atUs: number;
+  selected: number | null;
+  onSelectRequest: (i: number) => void;
+}
+
+export function Results({ cmp, states, atUs, selected, onSelectRequest }: Props) {
   const slo = cmp.config.slo;
-  const summaries = useMemo(() => ({ A: summarize(cmp.panels.A, cmp.panels.A.final, slo), B: summarize(cmp.panels.B, cmp.panels.B.final, slo) }), [cmp, slo]);
+  const [asOf, setAsOf] = useState<ResultsAsOf>('final');
+  const A = asOf === 'final' ? cmp.panels.A.final : states.A;
+  const B = asOf === 'final' ? cmp.panels.B.final : states.B;
+  const summaries = useMemo(() => ({ A: summarize(cmp.panels.A, A, slo), B: summarize(cmp.panels.B, B, slo) }), [cmp, A, B, slo]);
   const perRequest = useMemo(
     () =>
       cmp.trace.map((item, i) => ({
         item,
-        A: requestMetrics(cmp.panels.A.histories[i]!, item.outputTokens, cmp.panels.A.final.requests[i]!, cmp.panels.A.final.iterationsStarted, slo),
-        B: requestMetrics(cmp.panels.B.histories[i]!, item.outputTokens, cmp.panels.B.final.requests[i]!, cmp.panels.B.final.iterationsStarted, slo),
+        A: requestMetrics(cmp.panels.A.histories[i]!, item.outputTokens, A.requests[i]!, A.iterationsStarted, slo),
+        B: requestMetrics(cmp.panels.B.histories[i]!, item.outputTokens, B.requests[i]!, B.iterationsStarted, slo),
       })),
-    [cmp, slo],
+    [cmp, A, B, slo],
   );
   return (
     <section className="card" aria-labelledby="results-heading" data-testid="results">
       <div className="card-head">
         <h2 id="results-heading">{S.results.heading}</h2>
+        <div className="segmented spacer" role="group" aria-label={S.results.modeLabel}>
+          {AS_OF.map(m => (
+            <button key={m} type="button" aria-pressed={asOf === m} onClick={() => setAsOf(m)}>
+              {S.results.modes[m]}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="card-body stack">
-        <p className="muted small">{S.results.note}</p>
+        <p className="muted small">{S.results.note(asOf === 'final' ? S.results.finalScope : S.results.cursorScope(formatMs(atUs)))}</p>
         <p className="muted small">{S.results.sloNote(slo.ttftMs, slo.tpotMs)}</p>
         <div className="table-scroll">
           <table className="data" data-testid="results-table">
