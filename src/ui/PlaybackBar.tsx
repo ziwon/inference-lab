@@ -6,6 +6,9 @@ export const SPEEDS = [25, 50, 100, 200, 500, 1000, 2000] as const;
 export const WINDOWS = [null, 2000, 500, 100] as const;
 const SCRUB_STEPS = 200;
 
+export const speedOptions = (speed: number): readonly number[] =>
+  SPEEDS.includes(speed as (typeof SPEEDS)[number]) ? SPEEDS : [...SPEEDS, speed].sort((a, b) => a - b);
+
 interface Props {
   cmp: Comparison;
   at: Playhead;
@@ -28,23 +31,22 @@ const Icon = ({ d }: { d: string }) => (
 
 export function PlaybackBar({ cmp, at, playing, speed, windowMs, onToggle, onStep, onReset, onSeekTime, onSpeed, onWindow }: Props) {
   const total = cmp.steps.timeUs.length;
-  const speeds = SPEEDS.includes(speed as (typeof SPEEDS)[number]) ? SPEEDS : [...SPEEDS, speed].sort((a, b) => a - b);
   const scrubStep = Math.max(1, Math.round(cmp.endUs / SCRUB_STEPS));
   return (
     <section className="card" aria-label={S.playback.time}>
       <div className="playback">
         <div className="transport">
-          <button type="button" className="btn icon" aria-label={S.playback.reset} title={S.playback.reset} onClick={onReset} data-testid="reset">
+          <button type="button" className="btn icon" aria-label={S.playback.reset} title={S.playback.reset} aria-keyshortcuts="Home" onClick={onReset} data-testid="reset">
             <Icon d="M3 2h2v12H3zM14 2v12L6 8z" />
           </button>
-          <button type="button" className="btn icon" aria-label={S.playback.previous} title={S.playback.previous} onClick={() => onStep(-1)} disabled={at.applied === 0} data-testid="prev">
+          <button type="button" className="btn icon" aria-label={S.playback.previous} title={S.playback.previous} aria-keyshortcuts="ArrowLeft" onClick={() => onStep(-1)} disabled={at.applied === 0} data-testid="prev">
             <Icon d="M11 2h2v12h-2zM10 2v12L3 8z" />
           </button>
-          <button type="button" className="btn primary" onClick={onToggle} aria-pressed={playing} data-testid="play">
+          <button type="button" className="btn primary" onClick={onToggle} aria-pressed={playing} aria-keyshortcuts="Space" data-testid="play">
             {playing ? <Icon d="M4 2h3v12H4zm5 0h3v12H9z" /> : <Icon d="M4 2v12l10-6z" />}
             {playing ? S.playback.pause : S.playback.play}
           </button>
-          <button type="button" className="btn icon" aria-label={S.playback.next} title={S.playback.next} onClick={() => onStep(1)} disabled={at.applied >= total} data-testid="next">
+          <button type="button" className="btn icon" aria-label={S.playback.next} title={S.playback.next} aria-keyshortcuts="ArrowRight" onClick={() => onStep(1)} disabled={at.applied >= total} data-testid="next">
             <Icon d="M11 2h2v12h-2zM3 2v12l7-6z" />
           </button>
         </div>
@@ -73,7 +75,7 @@ export function PlaybackBar({ cmp, at, playing, speed, windowMs, onToggle, onSte
           <label>
             {S.playback.speed}
             <select value={speed} onChange={e => onSpeed(Number(e.target.value))} data-testid="speed">
-              {speeds.map(s => (
+              {speedOptions(speed).map(s => (
                 <option key={s} value={s}>
                   {S.playback.speedOption(s)}
                 </option>
@@ -92,7 +94,6 @@ export function PlaybackBar({ cmp, at, playing, speed, windowMs, onToggle, onSte
           </label>
         </div>
       </div>
-      <p className="shortcut-hint">{S.playback.shortcuts}</p>
     </section>
   );
 }

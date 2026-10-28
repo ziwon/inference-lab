@@ -2,6 +2,7 @@ import type { IssueCode, PolicyId } from '../sim/config.ts';
 import type { WaitReason } from '../sim/inspect.ts';
 import type { RequestStatus } from '../sim/metrics.ts';
 import type { ScenarioId } from '../sim/scenarios.ts';
+import type { Command } from './Shortcuts.tsx';
 import type { EntryReason, SkipReason } from '../sim/scheduler.ts';
 import type { InfeasibleReason, Phase, RunOutcome } from '../sim/state.ts';
 
@@ -17,6 +18,7 @@ export const S = {
     tagline: 'Requests, batching, and paged KV cache, one iteration at a time.',
     disclaimer: 'Educational model, not a hardware benchmark',
     modelButton: 'Model assumptions',
+    shortcutsButton: 'Keyboard shortcuts',
     importButton: 'Import',
     exportButton: 'Export JSON',
     shareButton: 'Share link',
@@ -119,7 +121,6 @@ export const S = {
     window: 'Time window',
     windowAll: 'Whole run',
     windowOption: (ms: number) => `${ms} ms`,
-    shortcuts: 'Space plays or pauses. Arrow keys step one event. Home resets.',
   },
   timeline: {
     heading: 'Request timeline',
@@ -356,7 +357,22 @@ export const S = {
   },
   model: {
     heading: 'Model assumptions',
-    close: 'Close',
+  },
+  dialog: { close: 'Close' },
+  shortcuts: {
+    heading: 'Keyboard shortcuts',
+    commands: {
+      toggle: 'Play or pause',
+      previous: 'Previous event',
+      next: 'Next event',
+      reset: 'Reset to the start',
+      end: 'Jump to the end',
+      slower: 'Slower playback',
+      faster: 'Faster playback',
+      shortcuts: 'Show these shortcuts',
+    } satisfies Record<Command, string>,
+    keyName: (key: string) => ({ ' ': 'Space', ArrowLeft: '←', ArrowRight: '→', '-': '−' })[key] ?? key,
+    note: 'Esc closes this dialog. Shortcuts are ignored while typing in a field.',
   },
   common: { na: 'N/A', yes: 'Yes', no: 'No' },
 };

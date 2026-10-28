@@ -33,7 +33,7 @@ The legend repeats the shapes. Batch and memory inspectors reuse the same tokens
 
 Desktop, 1200 px and wider:
 
-1. Header: product name, the "Educational model, not a hardware benchmark" note, and the actions Model assumptions, Import, Export JSON, and Share link.
+1. Header: product name, the "Educational model, not a hardware benchmark" note, and the actions Model assumptions, Keyboard shortcuts, Import, Export JSON, and Share link.
 2. Playback bar, across both columns and pinned to the top of the viewport while the page scrolls: reset, previous event, play or pause, next event, the scrubber, the modeled time with the event counter, speed, and time window. One scrubber step is 1/200 of the run, and the scrubber announces its value as modeled time, such as "37.4 ms of 871 ms (modeled)".
 3. Left column: scenario picker with the scenario's explanation (what to observe, the assumption that matters, what it does not establish), then the compact configuration groups.
 4. Main column, top to bottom:
@@ -47,7 +47,7 @@ Narrow screens, down to 390 px, stack the same sections in reading order. The pl
 
 ## Behavior
 
-- Keyboard: `Space` plays or pauses, `←` and `→` step one event, `Home` resets. Shortcuts are ignored while focus is in an input, select, textarea, or editable element.
+- Keyboard: `Space` plays or pauses, `←` and `→` step one event, `Home` resets, `End` jumps to the end, `+` and `-` move through the speed options, and `?` opens the shortcuts dialog, which the Keyboard shortcuts button in the header also opens. The dialog renders from the same table the key handler reads, so it lists every shortcut. Esc or Close shuts it and focus returns to what opened it. Shortcuts are ignored while focus is in an input, select, textarea, editable element, or open dialog.
 - Focus: every interactive element shows a 2 px lime outline on `:focus-visible`.
 - Reduced motion: with `prefers-reduced-motion: reduce`, transitions and smooth scrolling are off. Playback still advances, because it changes state rather than decorating it.
 - Copy: short sentences for engineers. Each estimate names the model that produced it. Units are explicit: bytes shown as KiB, MiB, or GiB (binary), time as "ms (modeled)".

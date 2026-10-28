@@ -128,7 +128,6 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .playback .scrub { flex: 1 1 260px; display: flex; align-items: center; gap: var(--s2); min-width: 200px; }
 .playback .clock { min-width: 120px; text-align: right; white-space: nowrap; }
 .playback label { display: inline-flex; align-items: center; gap: var(--s1); color: var(--text-2); font-size: 12px; }
-.shortcut-hint { color: var(--muted); font-size: 12px; padding: 0 var(--s3) var(--s2); }
 
 .panel-tag { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; background: var(--hover); font-weight: 700; font-size: 12px; }
 .panel-tag.b { background: #2e3540; }
@@ -207,6 +206,9 @@ dialog .card-body { overflow-y: auto; max-height: calc(100vh - 120px); }
 .doc p, .doc li { color: var(--text-2); }
 .doc ul { padding-left: var(--s5); margin: var(--s1) 0; }
 .doc code, .eq { font-family: var(--mono); font-size: 12px; }
+.shortcuts { border-collapse: collapse; margin-bottom: var(--s3); }
+.shortcuts td { padding: var(--s1) var(--s4) var(--s1) 0; color: var(--text-2); }
+kbd { display: inline-block; min-width: 24px; padding: 1px 6px; border: 1px solid var(--control); border-radius: 4px; background: var(--inset); color: var(--text); font: 12px var(--mono); text-align: center; }
 .eq { display: block; padding: var(--s2); border-radius: var(--radius); background: var(--inset); white-space: pre-wrap; color: var(--text); }
 
 @media (max-width: 1199px) {
@@ -230,7 +232,6 @@ dialog .card-body { overflow-y: auto; max-height: calc(100vh - 120px); }
   .playback .scrub { grid-area: scrub; min-width: 0; }
   .playback .clock { grid-area: clock; min-width: 0; }
   .playback .options { grid-area: options; }
-  .shortcut-hint { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

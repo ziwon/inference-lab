@@ -8,8 +8,9 @@ import { ConfigPanel, ScenarioPanel } from './ConfigPanel.tsx';
 import { DetailsPanel, EventLog, type Selection } from './Details.tsx';
 import { BatchInspector, MemoryInspector } from './Inspectors.tsx';
 import { ModelDialog } from './ModelDialog.tsx';
-import { PlaybackBar } from './PlaybackBar.tsx';
+import { PlaybackBar, speedOptions } from './PlaybackBar.tsx';
 import { Results } from './Results.tsx';
+import { type Command, SHORTCUTS, ShortcutsDialog } from './Shortcuts.tsx';
 import { S, issueText } from './strings.ts';
 import { Legend, type TimeRange, Timeline } from './Timeline.tsx';
 
@@ -149,6 +150,7 @@ export function App() {
   const [mobilePanel, setMobilePanel] = useState<PanelId>('A');
   const narrow = useNarrow();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const shortcutsRef = useRef<HTMLDialogElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const atRef = useRef(at);
@@ -251,21 +253,37 @@ export function App() {
   }, [cmp]);
 
   useEffect(() => {
+    const changeSpeed = (delta: number) =>
+      setSpeed(current => {
+        const options = speedOptions(current);
+        return options[Math.max(0, Math.min(options.length - 1, options.indexOf(current) + delta))]!;
+      });
+    const commands: Record<Command, () => void> = {
+      toggle,
+      previous: () => step(-1),
+      next: () => step(1),
+      reset,
+      end: () => {
+        setPlaying(false);
+        setAt(seekStep(cmp, total));
+      },
+      slower: () => changeSpeed(-1),
+      faster: () => changeSpeed(1),
+      shortcuts: () => shortcutsRef.current?.showModal(),
+    };
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented) return;
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest('input, select, textarea, [contenteditable=""], [contenteditable="true"], dialog[open]')) return;
       if (e.key === ' ' && target?.closest('button, a, summary')) return;
-      if (e.key === ' ') toggle();
-      else if (e.key === 'ArrowRight') step(1);
-      else if (e.key === 'ArrowLeft') step(-1);
-      else if (e.key === 'Home') reset();
-      else return;
+      const command = SHORTCUTS.get(e.key);
+      if (!command) return;
+      commands[command]();
       e.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [toggle, step, reset]);
+  }, [toggle, step, reset, cmp, total]);
 
   const states = { A: stateAt(cmp.panels.A, panelApplied(cmp, at, 'A')), B: stateAt(cmp.panels.B, panelApplied(cmp, at, 'B')) };
   const range = windowRange(cmp, at.timeUs, windowMs);
@@ -326,6 +344,9 @@ export function App() {
         <div className="actions">
           <button type="button" className="btn" onClick={() => dialogRef.current?.showModal()} data-testid="open-model">
             {S.app.modelButton}
+          </button>
+          <button type="button" className="btn" aria-keyshortcuts="?" onClick={() => shortcutsRef.current?.showModal()} data-testid="open-shortcuts">
+            {S.app.shortcutsButton}
           </button>
           <button type="button" className="btn" onClick={() => fileRef.current?.click()} data-testid="import">
             {S.app.importButton}
@@ -448,6 +469,7 @@ export function App() {
         </main>
       </div>
       <ModelDialog ref={dialogRef} cost={cmp.config.cost} />
+      <ShortcutsDialog ref={shortcutsRef} />
     </>
   );
 }

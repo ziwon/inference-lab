@@ -77,6 +77,42 @@ test('event stepping moves one event at a time and keyboard shortcuts skip input
   await expect(counter).toHaveText(/^Event 0 of/);
 });
 
+test('End jumps to the end, + and - change speed, and ? lists the shortcuts and returns focus', async ({ page }) => {
+  await page.goto('/');
+  const counter = page.getByTestId('event-counter');
+  const speed = page.getByTestId('speed');
+  await page.locator('body').press('End');
+  await expect(counter).toHaveText(/^Event (\d+) of \1$/);
+  await page.keyboard.press('Home');
+  await expect(speed).toHaveValue('100');
+  await page.keyboard.press('+');
+  await expect(speed).toHaveValue('200');
+  await page.keyboard.press('-');
+  await page.keyboard.press('-');
+  await expect(speed).toHaveValue('50');
+
+  await page.getByTestId('slo-ttft').focus();
+  for (const key of ['End', '+', '?']) await page.keyboard.press(key);
+  await expect(counter).toHaveText(/^Event 0 of/);
+  await expect(speed).toHaveValue('50');
+
+  const dialog = page.getByTestId('shortcuts-dialog');
+  await expect(dialog).toBeHidden();
+  await page.getByTestId('play').focus();
+  await page.keyboard.press('?');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('kbd')).toHaveText(['Space', '←', '→', 'Home', 'End', '−', '+', '?']);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(page.getByTestId('play')).toBeFocused();
+
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Keyboard shortcuts' })).toBeFocused();
+});
+
 test('selecting a request and an iteration explains them', async ({ page }) => {
   await page.goto('/');
   for (let i = 0; i < 60; i++) await page.getByTestId('next').click();

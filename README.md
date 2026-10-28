@@ -14,7 +14,7 @@ It is an educational model, not a hardware benchmark. Every number comes from th
 4. Select an iteration bar or **Explain this iteration** to see why each request ran or waited. Select a request row to see its KV positions, blocks, reservation, and latency in both panels.
 5. Read **Comparison results**. In this model chunking cuts the worst inter-token gap from 166 ms to 22 ms. It also delays the long request's first token from 171 ms to 241 ms, and lets the request behind it start in 27 ms instead of 133 ms.
 
-`Space` plays or pauses, the arrow keys step one event, and `Home` resets. **Share link** copies a link that encodes the configuration and seed. **Export JSON** downloads the configuration, trace, assumptions, every event, and the result summaries.
+`Space` plays or pauses, the arrow keys step one event, `Home` and `End` jump to the start and the end, `+` and `-` change the playback speed, and `?` lists every shortcut. **Share link** copies a link that encodes the configuration and seed. **Export JSON** downloads the configuration, trace, assumptions, every event, and the result summaries.
 
 ## What you can explore
 
