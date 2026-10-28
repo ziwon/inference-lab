@@ -97,7 +97,7 @@ export function summarize(run: PanelRun, state: Readonly<SimState>, slo: Slo): S
   const pick = (f: (m: RequestMetrics) => number | null) => per.map(f).filter((v): v is number => v !== null);
   const startUs = run.trace[0]?.arrivalUs ?? 0;
   const intervalUs = Math.max(0, h - startUs);
-  const counted = state.ended ? per.length : per.length - counts.pending;
+  const counted = state.ended ? per.length : counts.completed + counts.infeasible;
   const met = per.filter(m => m.meetsSlo).length;
   return {
     horizonUs: h,

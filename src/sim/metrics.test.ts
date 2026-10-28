@@ -42,13 +42,14 @@ test('empty samples and zero-length intervals are N/A, not zero', () => {
   assert.deepEqual(s.ttft, { n: 0, mean: null, p50: null, p90: null, p99: null, max: null });
   assert.equal(s.completedPerSec, null);
   assert.equal(s.outputTokensPerSec, null);
-  assert.equal(s.slo.attainment, 0);
+  assert.equal(s.slo.attainment, null);
   assert.deepEqual(distribution([]).p99, null);
 });
 
 test('metrics at a mid-run horizon count unfinished and waiting requests separately', () => {
   const s = summarize(run, at(run, 2000), slo);
   assert.deepEqual(s.counts, { total: 2, pending: 0, waiting: 0, active: 1, completed: 1, infeasible: 0 });
+  assert.deepEqual(s.slo, { met: 0, counted: 1, attainment: 0, notMet: 1 }, 'mid-run SLO covers finished requests only: b finished with TTFT 1.5 ms over the 1.2 ms target');
   const early = summarize(run, at(run, 400), slo);
   assert.deepEqual([early.counts.active, early.counts.pending], [1, 1]);
   const infeasible = build(fixture({ trace: [r('huge', 0, 40, 10), r('ok', 0, 4, 2)], blocks: 10 })).panels.A;

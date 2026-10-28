@@ -295,7 +295,7 @@ export const S = {
     modeLabel: 'Results as of',
     note: (scope: string) => `${scope} Percentiles use nearest rank. n is the sample count. Requests that never finish count against SLO attainment.`,
     finalScope: 'Full run, modeled time.',
-    cursorScope: (at: string) => `Events up to the cursor at ${at} (modeled). Running requests have no E2E or TPOT yet and count as not met.`,
+    cursorScope: (at: string) => `Events up to the cursor at ${at} (modeled). Running requests have no E2E or TPOT yet, and SLO attainment covers only requests that have finished or were rejected.`,
     metric: 'Metric',
     delta: 'B − A',
     rows: {
