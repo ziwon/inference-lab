@@ -17,6 +17,18 @@ test('the default scenario plays, pauses, and reaches the long prefill', async (
   await expect(page.getByTestId('row-A-Long')).toBeVisible();
 });
 
+test('before Play, a request row previews the whole run faintly and has no played marks', async ({ page }) => {
+  await page.goto('/');
+  const ghost = page.getByTestId('marks-ghost-A').locator('[data-row="R1"]');
+  const played = page.getByTestId('marks-played-A').locator('[data-row="R1"]');
+  const plotWidth = Number(await page.getByTestId('marks-played-A').getAttribute('width'));
+  await expect(played.locator('rect, path')).toHaveCount(0);
+  expect(await ghost.evaluate(g => (g as SVGGElement).getBBox().width)).toBeGreaterThan(0.8 * plotWidth);
+  expect(Number(await ghost.evaluate(g => getComputedStyle(g).fillOpacity))).toBeLessThan(1);
+  for (let i = 0; i < 3; i++) await page.getByTestId('next').click();
+  await expect(played.locator('rect, path')).not.toHaveCount(0);
+});
+
 test('event stepping moves one event at a time and keyboard shortcuts skip inputs', async ({ page }) => {
   await page.goto('/');
   const counter = page.getByTestId('event-counter');

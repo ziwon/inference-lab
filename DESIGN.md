@@ -25,6 +25,8 @@ Every state has a shape and a text label as well as a color, so the timeline sta
 | Completed | Square end cap and a check glyph | lime |
 | Infeasible | Cross glyph and the reason label | red `--state-error` |
 
+Each timeline draws the whole run faintly (`--ghost-opacity`) under the played part, so the shape of the run is visible before Play. The faint layer is the same marks read at the run's final state, and it thins dense rows by the same rule as the played layer: a row draws individual decode ticks and tokens only when the visible window has room for them.
+
 The legend repeats the shapes. Batch and memory inspectors reuse the same tokens. Prefill is cyan and decode is lime everywhere.
 
 ## Composition

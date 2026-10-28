@@ -132,6 +132,7 @@ export const S = {
       token: 'Output token',
       completed: 'Completed',
       infeasible: 'Infeasible',
+      ahead: 'Faint: the rest of the run',
     },
     rowLabel: (id: string, phase: string) => `${id}, ${phase}. Show details.`,
     current: (index: number) => `#${iterationNumber(index)}`,

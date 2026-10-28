@@ -1,4 +1,4 @@
-import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Comparison, Playhead } from '../sim/compare.ts';
 import type { PanelId, SchedulerLimits } from '../sim/config.ts';
 import type { PanelRun, RequestHistory } from '../sim/engine.ts';
@@ -72,6 +72,13 @@ export function PanelHeading({ cmp, panel, children }: { cmp: Comparison; panel:
   );
 }
 
+interface MarkLayer {
+  state: Readonly<SimState>;
+  timeUs: number;
+}
+
+const wholeRun = (run: PanelRun): MarkLayer => ({ state: run.final, timeUs: run.endUs });
+
 interface Props {
   cmp: Comparison;
   panel: PanelId;
@@ -88,7 +95,7 @@ export function Timeline({ cmp, panel, state, at, range, selectedRequest, select
   const run = cmp.panels[panel];
   const [wrapRef, width] = useWidth<HTMLDivElement>();
   const [scrollTop, setScrollTop] = useState(0);
-  const plotW = Math.max(40, width - LABEL_W - 8);
+  const plotW = Math.max(40, width - LABEL_W - 16);
   const span = Math.max(1, range.t1 - range.t0);
   const X = (t: number) => ((t - range.t0) / span) * plotW;
   const T = at.timeUs;
@@ -96,6 +103,14 @@ export function Timeline({ cmp, panel, state, at, range, selectedRequest, select
   const first = Math.max(0, Math.floor(scrollTop / ROW_H) - 2);
   const last = Math.min(n, first + Math.ceil(ROWS_MAX_H / ROW_H) + 4);
   const rows = Array.from({ length: last - first }, (_, k) => first + k);
+  const played: MarkLayer = { state, timeUs: T };
+  const marks = (layer: MarkLayer) =>
+    rows.map((i, k) => (
+      <g key={i} transform={`translate(0 ${k * ROW_H})`} data-row={run.trace[i]!.id}>
+        <RowMarks run={run} h={run.histories[i]!} r={layer.state.requests[i]!} started={layer.state.iterationsStarted} X={X} T={layer.timeUs} range={range} plotW={plotW} />
+      </g>
+    ));
+  const ghostMarks = useMemo(() => marks(wholeRun(run)), [run, first, last, range.t0, range.t1, plotW]);
 
   return (
     <section className="card" aria-label={`${S.panel(panel)} ${S.timeline.heading}`} data-testid={`timeline-${panel}`}>
@@ -103,7 +118,7 @@ export function Timeline({ cmp, panel, state, at, range, selectedRequest, select
         <span className="spacer muted small">{S.timeline.heading}</span>
       </PanelHeading>
       <div className="timeline-wrap" ref={wrapRef}>
-        <IterationStrip run={run} state={state} X={X} T={T} range={range} plotW={plotW} width={width} selected={selectedIteration} onSelect={onSelectIteration} />
+        <IterationStrip run={run} played={played} X={X} range={range} plotW={plotW} width={width} selected={selectedIteration} onSelect={onSelectIteration} />
         <div className="tl-rows" style={{ maxHeight: ROWS_MAX_H }} onScroll={e => setScrollTop(e.currentTarget.scrollTop)} tabIndex={-1}>
           <div className="tl-rows-inner" style={{ height: n * ROW_H }}>
             {rows.map(i => {
@@ -128,11 +143,15 @@ export function Timeline({ cmp, panel, state, at, range, selectedRequest, select
             })}
             <svg className="tl-svg" width={plotW} height={(last - first) * ROW_H} style={{ top: first * ROW_H }} aria-hidden="true">
               {rows.map((i, k) => (
-                <g key={i} transform={`translate(0 ${k * ROW_H})`} onClick={() => onSelectRequest(i)} style={{ cursor: 'pointer' }}>
-                  <rect width={plotW} height={ROW_H} fill={selectedRequest === i ? 'var(--raised)' : k % 2 ? 'transparent' : 'rgba(255,255,255,0.015)'} />
-                  <RowMarks run={run} h={run.histories[i]!} r={state.requests[i]!} started={state.iterationsStarted} X={X} T={T} range={range} plotW={plotW} />
-                </g>
+                <rect key={i} y={k * ROW_H} width={plotW} height={ROW_H} fill={selectedRequest === i ? 'var(--raised)' : k % 2 ? 'transparent' : 'rgba(255,255,255,0.015)'} onClick={() => onSelectRequest(i)} style={{ cursor: 'pointer' }} />
               ))}
+              {/* The faint layer sits in its own SVG so playhead updates do not repaint it. */}
+              <g className="marks ghost" data-testid={`marks-ghost-${panel}`}>
+                {ghostMarks}
+              </g>
+            </svg>
+            <svg className="tl-svg marks" width={plotW} height={(last - first) * ROW_H} style={{ top: first * ROW_H }} aria-hidden="true" data-testid={`marks-played-${panel}`}>
+              {marks(played)}
               {T >= range.t0 && T <= range.t1 && <line x1={X(T)} x2={X(T)} y1={0} y2={(last - first) * ROW_H} stroke="var(--accent)" strokeWidth={1.5} />}
             </svg>
           </div>
@@ -146,12 +165,11 @@ export function Timeline({ cmp, panel, state, at, range, selectedRequest, select
 }
 
 function IterationStrip({
-  run, state, X, T, range, plotW, width, selected, onSelect,
-}: { run: PanelRun; state: Readonly<SimState>; X: (t: number) => number; T: number; range: TimeRange; plotW: number; width: number; selected: number | null; onSelect: (i: number) => void }) {
+  run, played, X, range, plotW, width, selected, onSelect,
+}: { run: PanelRun; played: MarkLayer; X: (t: number) => number; range: TimeRange; plotW: number; width: number; selected: number | null; onSelect: (i: number) => void }) {
   const its = run.iterations;
-  const startedLimit = state.iterationsStarted;
-  const from = Math.max(0, lowerBound(its.length, i => its[i]!.endUs, range.t0));
-  const to = Math.min(startedLimit, lowerBound(its.length, i => its[i]!.startUs, range.t1 + 1));
+  const T = played.timeUs;
+  const startedLimit = played.state.iterationsStarted;
   const step = niceStep(range.t1 - range.t0, Math.max(2, Math.floor(plotW / 90)));
   const ticks: number[] = [];
   for (let t = Math.ceil(range.t0 / step) * step; t <= range.t1; t += step) ticks.push(t);
@@ -160,6 +178,53 @@ function IterationStrip({
     const i = lowerBound(Math.min(startedLimit, its.length), k => its[k]!.endUs, t);
     if (i < startedLimit && its[i] && its[i]!.startUs <= t) onSelect(i);
   };
+  const current = startedLimit > 0 ? startedLimit - 1 : null;
+  const ghostBars = useMemo(() => <IterationBars run={run} layer={wholeRun(run)} X={X} range={range} selected={null} />, [run, range.t0, range.t1, plotW]);
+  return (
+    <div className="tl-strip-wrap">
+      <svg className="tl-strip-ghost marks ghost" width={width} height={STRIP_H} aria-hidden="true">
+        <g transform={`translate(${LABEL_W} 0)`}>{ghostBars}</g>
+      </svg>
+      <svg
+        className="tl-strip"
+        width={width}
+        height={STRIP_H}
+        role="img"
+        aria-label={S.timeline.iterations}
+        onClick={e => pick(e.clientX, e.currentTarget.getBoundingClientRect())}
+      >
+        <text x={8} y={22}>
+          {S.timeline.iterations}
+        </text>
+        {current !== null && (
+          <text x={8} y={34} className="mono">
+            {S.timeline.current(current)}
+          </text>
+        )}
+        <text x={8} y={48}>
+          {S.timeline.axis}
+        </text>
+        <g transform={`translate(${LABEL_W} 0)`}>
+          <IterationBars run={run} layer={played} X={X} range={range} selected={selected} />
+          {ticks.map(t => (
+            <g key={t} transform={`translate(${X(t)} 0)`}>
+              <line y1={34} y2={38} stroke="var(--control)" />
+              <text y={48} textAnchor={X(t) < 12 ? 'start' : 'middle'}>
+                {(t / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })}
+              </text>
+            </g>
+          ))}
+          {T >= range.t0 && T <= range.t1 && <line x1={X(T)} x2={X(T)} y1={0} y2={STRIP_H} stroke="var(--accent)" strokeWidth={1.5} />}
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function IterationBars({ run, layer: { state, timeUs: T }, X, range, selected }: { run: PanelRun; layer: MarkLayer; X: (t: number) => number; range: TimeRange; selected: number | null }) {
+  const its = run.iterations;
+  const from = Math.max(0, lowerBound(its.length, i => its[i]!.endUs, range.t0));
+  const to = Math.min(state.iterationsStarted, lowerBound(its.length, i => its[i]!.startUs, range.t1 + 1));
   const bars: ReactNode[] = [];
   for (let i = from; i < to; i++) {
     const it = its[i]!;
@@ -180,41 +245,7 @@ function IterationStrip({
       </g>,
     );
   }
-  const current = startedLimit > 0 ? startedLimit - 1 : null;
-  return (
-    <svg
-      className="tl-strip"
-      width={width}
-      height={STRIP_H}
-      role="img"
-      aria-label={S.timeline.iterations}
-      onClick={e => pick(e.clientX, e.currentTarget.getBoundingClientRect())}
-    >
-      <text x={8} y={22}>
-        {S.timeline.iterations}
-      </text>
-      {current !== null && (
-        <text x={8} y={34} className="mono">
-          {S.timeline.current(current)}
-        </text>
-      )}
-      <text x={8} y={48}>
-        {S.timeline.axis}
-      </text>
-      <g transform={`translate(${LABEL_W} 0)`}>
-        {bars}
-        {ticks.map(t => (
-          <g key={t} transform={`translate(${X(t)} 0)`}>
-            <line y1={34} y2={38} stroke="var(--control)" />
-            <text y={48} textAnchor={X(t) < 12 ? 'start' : 'middle'}>
-              {(t / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })}
-            </text>
-          </g>
-        ))}
-        {T >= range.t0 && T <= range.t1 && <line x1={X(T)} x2={X(T)} y1={0} y2={STRIP_H} stroke="var(--accent)" strokeWidth={1.5} />}
-      </g>
-    </svg>
-  );
+  return <>{bars}</>;
 }
 
 function RowMarks({ run, h, r, started, X, T, range, plotW }: { run: PanelRun; h: RequestHistory; r: Readonly<RequestState>; started: number; X: (t: number) => number; T: number; range: TimeRange; plotW: number }) {
@@ -260,7 +291,8 @@ function RowMarks({ run, h, r, started, X, T, range, plotW }: { run: PanelRun; h
     const line = seg(firstToken, lastDecode.endUs);
     const from = lowerBound(decodesStarted, k => run.iterations[decodes[k]!]!.endUs, range.t0);
     const to = Math.min(decodesStarted, lowerBound(decodesStarted, k => run.iterations[decodes[k]!]!.startUs, right + 1));
-    const dense = (to - from) * 3 > plotW;
+    const inWindow = lowerBound(decodes.length, k => run.iterations[decodes[k]!]!.startUs, range.t1 + 1) - lowerBound(decodes.length, k => run.iterations[decodes[k]!]!.endUs, range.t0);
+    const dense = inWindow * 3 > plotW;
     if (line) out.push(<rect key="dl" x={line.x} y={mid - (dense ? 3 : 1)} width={line.w} height={dense ? 6 : 2} fill="var(--state-decode)" />);
     if (!dense) {
       for (let k = from; k < to; k++) {
@@ -272,7 +304,7 @@ function RowMarks({ run, h, r, started, X, T, range, plotW }: { run: PanelRun; h
   }
   const tFrom = lowerBound(h.tokenTimesUs.length, k => h.tokenTimesUs[k]!, range.t0);
   const tTo = Math.min(r.generatedTokens, lowerBound(h.tokenTimesUs.length, k => h.tokenTimesUs[k]!, right + 1));
-  const sparse = (tTo - tFrom) * 9 <= plotW;
+  const sparse = (lowerBound(h.tokenTimesUs.length, k => h.tokenTimesUs[k]!, range.t1 + 1) - tFrom) * 9 <= plotW;
   for (let k = tFrom; k < tTo; k++) {
     if (!sparse && k !== 0) continue;
     const x = X(h.tokenTimesUs[k]!);
@@ -324,6 +356,7 @@ export function Legend() {
       {item(L.token, <path d="M11 2l3 4l-3 4l-3 -4z" fill="var(--text)" />)}
       {item(L.completed, <><rect x={4} y={1} width={3} height={10} fill="var(--state-decode)" /><path d="M10 6l2.5 3l5 -6" stroke="var(--state-decode)" strokeWidth={1.6} fill="none" /></>)}
       {item(L.infeasible, <path d="M7 2l8 8m0 -8l-8 8" stroke="var(--state-error)" strokeWidth={2} />)}
+      {item(L.ahead, <g className="ghost"><rect x={0} y={1} width={8} height={10} fill="var(--state-prefill)" /><rect x={8} y={5} width={14} height={2} fill="var(--state-decode)" /></g>)}
     </div>
   );
 }

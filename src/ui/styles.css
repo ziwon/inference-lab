@@ -19,6 +19,7 @@
   --state-error: #f2867a;
   --weights: #8f86d9;
   --runtime: #6d7886;
+  --ghost-opacity: 0.3;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   --s1: 4px;
@@ -132,7 +133,9 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .override { color: var(--state-waiting); font-size: 12px; }
 
 .timeline-wrap { display: grid; gap: 0; }
-.tl-strip { display: block; width: 100%; height: 54px; cursor: pointer; }
+.tl-strip-wrap { position: relative; }
+.tl-strip { position: relative; display: block; width: 100%; height: 54px; cursor: pointer; }
+.tl-strip-ghost { position: absolute; left: 0; top: 0; }
 .tl-rows { position: relative; max-height: 300px; overflow-y: auto; overflow-x: hidden; border-top: 1px solid var(--separator); background: var(--inset); }
 .tl-rows-inner { position: relative; }
 .tl-row-label {
@@ -140,7 +143,9 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
   border: 0; background: transparent; text-align: left; cursor: pointer; font: 12px var(--mono); color: var(--text-2); white-space: nowrap; overflow: hidden;
 }
 .tl-row-label:hover, .tl-row-label[aria-pressed='true'] { color: var(--text); background: var(--hover); }
-.tl-svg { position: absolute; left: 92px; top: 0; }
+.tl-svg { position: absolute; left: 92px; top: 0; overflow: visible; }
+.marks { pointer-events: none; }
+.marks.ghost, .legend .ghost { fill-opacity: var(--ghost-opacity); stroke-opacity: var(--ghost-opacity); }
 .tl-axis { display: block; width: 100%; height: 22px; }
 .axis text, .tl-strip text { fill: var(--muted); font: 10px var(--mono); }
 .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); padding: var(--s2) var(--s3); border-top: 1px solid var(--separator); color: var(--text-2); font-size: 12px; }
