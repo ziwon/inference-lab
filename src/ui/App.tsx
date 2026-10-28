@@ -9,6 +9,7 @@ import { DetailsPanel, EventLog, type Selection } from './Details.tsx';
 import { Differences } from './Differences.tsx';
 import { BatchInspector, MemoryInspector } from './Inspectors.tsx';
 import { ModelDialog } from './ModelDialog.tsx';
+import { OverTime } from './OverTime.tsx';
 import { PlaybackBar, speedOptions } from './PlaybackBar.tsx';
 import { Results } from './Results.tsx';
 import { type Command, SHORTCUTS, ShortcutsDialog } from './Shortcuts.tsx';
@@ -288,6 +289,10 @@ export function App() {
 
   const states = { A: stateAt(cmp.panels.A, panelApplied(cmp, at, 'A')), B: stateAt(cmp.panels.B, panelApplied(cmp, at, 'B')) };
   const range = windowRange(cmp, at.timeUs, windowMs);
+  const seekToTime = (t: number) => {
+    setPlaying(false);
+    setAt(seekTime(cmp, t));
+  };
   const selectRequest = (request: number) => setSelection({ kind: 'request', request });
   const selectIteration = (panel: PanelId) => (iteration: number) => setSelection({ kind: 'iteration', panel, iteration });
 
@@ -403,10 +408,7 @@ export function App() {
           onToggle={toggle}
           onStep={step}
           onReset={reset}
-          onSeekTime={t => {
-            setPlaying(false);
-            setAt(seekTime(cmp, t));
-          }}
+          onSeekTime={seekToTime}
           onSpeed={setSpeed}
           onWindow={setWindowMs}
         />
@@ -452,6 +454,8 @@ export function App() {
               </div>
             ))}
           </div>
+
+          <OverTime cmp={cmp} atUs={at.timeUs} range={range} onSeekTime={seekToTime} />
 
           <div className="bottom">
             <DetailsPanel cmp={cmp} states={states} selection={selection} onSelect={setSelection} />

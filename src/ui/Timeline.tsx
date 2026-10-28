@@ -5,7 +5,7 @@ import type { PanelRun, RequestHistory } from '../sim/engine.ts';
 import type { RequestState, SimState } from '../sim/state.ts';
 import { S } from './strings.ts';
 
-const LABEL_W = 92;
+export const LABEL_W = 92;
 const ROW_H = 22;
 const STRIP_H = 54;
 const ROWS_MAX_H = 300;
@@ -15,7 +15,7 @@ export interface TimeRange {
   t1: number;
 }
 
-function useWidth<T extends HTMLElement>() {
+export function useWidth<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [width, setWidth] = useState(640);
   useLayoutEffect(() => {
@@ -29,7 +29,7 @@ function useWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
-function lowerBound(n: number, valueAt: (i: number) => number, target: number) {
+export function lowerBound(n: number, valueAt: (i: number) => number, target: number) {
   let lo = 0;
   let hi = n;
   while (lo < hi) {
@@ -40,7 +40,7 @@ function lowerBound(n: number, valueAt: (i: number) => number, target: number) {
   return lo;
 }
 
-function niceStep(spanUs: number, maxTicks: number) {
+export function niceStep(spanUs: number, maxTicks: number) {
   const raw = spanUs / Math.max(1, maxTicks);
   const pow = 10 ** Math.floor(Math.log10(Math.max(raw, 1)));
   return ([1, 2, 5, 10].find(m => m * pow >= raw) ?? 10) * pow;

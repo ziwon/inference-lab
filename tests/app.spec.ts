@@ -251,6 +251,27 @@ test('results at the cursor follow playback and agree with the timelines, and Fi
   await expect(atCursor).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('the over-time charts draw both panels on the shared axis and a click seeks there', async ({ page }) => {
+  await page.goto('/#scenario=burst');
+  const section = page.getByTestId('over-time');
+  for (const panel of ['A', 'B']) {
+    for (const [chart, name] of [['kv', 'KV blocks'], ['batch', 'batch and queue']]) {
+      const svg = section.getByTestId(`chart-${chart}-${panel}`);
+      await expect(svg).toHaveAttribute('aria-label', new RegExp(`^Panel ${panel} ${name} over time\\. .*peaks at`));
+      expect(await svg.locator('path.ot-area').evaluate(p => (p as SVGPathElement).getBBox().width)).toBeGreaterThan(100);
+    }
+  }
+  await expect(section.getByTestId('chart-batch-A')).toHaveAttribute('aria-label', /waiting queue peaks at 16 at/);
+  const target = section.getByTestId('chart-kv-B');
+  const box = (await target.boundingBox())!;
+  await target.click({ position: { x: box.width / 2, y: box.height / 2 } });
+  const end = Number((await page.getByTestId('scrubber').getAttribute('aria-valuetext'))!.split(' of ')[1]!.split(' ')[0]);
+  expect(Math.abs((await clockMs(page)) - end / 2)).toBeLessThan(end / 100);
+  await expect(page.getByTestId('event-counter')).not.toHaveText(/^Event 0 of/);
+  const playhead = Number(await target.locator('line.ot-playhead').getAttribute('x1'));
+  expect(Math.abs(playhead - box.width / 2)).toBeLessThan(2);
+});
+
 test('the edge-case preset marks the infeasible request and the one-token request', async ({ page }) => {
   await page.goto('/#scenario=edge-cases');
   const scrubber = page.getByTestId('scrubber');

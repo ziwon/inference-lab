@@ -166,6 +166,31 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .legend svg { width: 22px; height: 12px; }
 .outcome-line { padding: 0 var(--s3) var(--s2); color: var(--muted); font-size: 12px; }
 
+.over-time { display: grid; gap: var(--s2); padding: var(--s2) 0 var(--s2); }
+.ot-readout { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); padding: 0 var(--s3); color: var(--text-2); }
+.ot-readout > span { display: inline-flex; align-items: center; gap: var(--s1); }
+.ot-readout .panel-tag { width: 18px; height: 18px; font-size: 11px; }
+.ot-group { display: grid; gap: 2px; }
+.ot-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s3); padding: 0 var(--s3); color: var(--text-2); font-size: 12px; }
+.ot-head h3 { margin-right: var(--s1); }
+.ot-head span { display: inline-flex; align-items: center; gap: 6px; }
+.ot-head svg { width: 16px; height: 10px; }
+.ot-row { display: grid; grid-template-columns: 92px max-content; align-items: center; }
+.ot-gutter { padding-left: var(--s3); }
+.ot-gutter .panel-tag { width: 18px; height: 18px; font-size: 11px; }
+.ot-plot { display: block; cursor: crosshair; background: var(--inset); }
+.ot-axis { display: block; }
+.ot-grid { stroke: var(--separator); stroke-width: 1; }
+.ot-area { stroke-width: 1; stroke-linejoin: round; }
+.ot-line { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
+.ot-allocated { fill: var(--state-decode); fill-opacity: 0.3; stroke: var(--state-decode); }
+.ot-reserved { stroke: var(--state-admitted); }
+.ot-batch { fill: var(--state-admitted); fill-opacity: 0.3; stroke: var(--state-admitted); }
+.ot-waiting { stroke: var(--state-waiting); }
+.ot-head path { stroke-width: 2; }
+.ot-crosshair { stroke: var(--text-2); stroke-width: 1; pointer-events: none; }
+.ot-playhead { stroke: var(--accent); stroke-width: 1.5; pointer-events: none; }
+
 .inspectors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); }
 .inspector-col { display: grid; gap: var(--s4); align-content: start; min-width: 0; }
 .segmented { display: none; gap: 0; border: 1px solid var(--control); border-radius: var(--radius); overflow: hidden; width: max-content; }

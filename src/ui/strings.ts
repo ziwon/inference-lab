@@ -220,6 +220,27 @@ export const S = {
     rowSummary: (cached: number, inflight: number, allocated: number, reserved: number) =>
       `${inflight > 0 ? `${cached} + ${inflight} writing` : cached} tokens in ${allocated}/${reserved} blocks`,
   },
+  overTime: {
+    heading: 'Over time',
+    note: 'Sampled when each iteration starts, on the timelines’ time axis. Select a point to move the cursor there.',
+    kv: 'KV blocks',
+    batch: 'Batch and queue',
+    allocated: 'Allocated',
+    reserved: 'Reserved',
+    inBatch: 'Requests in the iteration',
+    waiting: 'Waiting',
+    scaleTo: (max: number) => `0 to ${max.toLocaleString('en-US')}`,
+    pool: (blocks: number) => `pool ${blocks.toLocaleString('en-US')}`,
+    at: (time: string) => `At ${time} (modeled)`,
+    idle: 'idle',
+    kvReadout: (allocated: number, reserved: number) => `${allocated.toLocaleString('en-US')} allocated, ${reserved.toLocaleString('en-US')} reserved`,
+    batchReadout: (entries: number, waiting: number) => `${count(entries, 'request')} in the iteration, ${waiting} waiting`,
+    kvSummary: (panel: string, peakAllocated: number, peakAt: string, peakReserved: number, pool: number) =>
+      `Panel ${panel} KV blocks over time. Allocated peaks at ${count(peakAllocated, 'block')} at ${peakAt}; reserved peaks at ${count(peakReserved, 'block')}; the pool holds ${count(pool, 'block')}.`,
+    batchSummary: (panel: string, peakEntries: number, peakWaiting: number, peakAt: string) =>
+      peakWaiting === 0 ? `Panel ${panel} batch and queue over time. Up to ${count(peakEntries, 'request')} per iteration; no request waits at an iteration start.`
+      : `Panel ${panel} batch and queue over time. Up to ${count(peakEntries, 'request')} per iteration; the waiting queue peaks at ${peakWaiting} at ${peakAt}.`,
+  },
   details: {
     heading: 'Details',
     hint: 'Select a request row or an iteration bar to see its details. Select an event to jump to it.',
