@@ -15,7 +15,8 @@
     "predeploy": "npm run check",
     "deploy": "npx wrangler pages deploy dist --project-name=inference-lab",
     "preview": "vite preview --host 0.0.0.0",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "screenshot": "node scripts/readme-screenshot.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

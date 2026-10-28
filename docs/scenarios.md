@@ -18,7 +18,7 @@ The preset is built so the long request gets an admission slot and its 386-block
 | --- | --- | --- |
 | Longest gap between tokens (ITL max) | 166 ms | 22 ms |
 | ITL p99 | 12.5 ms | 22.3 ms |
-| `Long` TTFT | 171 ms | 241 ms |
+| `Long` TTFT | 171 ms | 240 ms |
 | `R8` TTFT | 133 ms | 27 ms |
 | Last event | 871 ms | 871 ms |
 | SLO attainment (TTFT ≤ 200 ms, TPOT ≤ 20 ms) | 8 of 8 | 7 of 8 |
